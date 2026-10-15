@@ -8,6 +8,7 @@ This repository packages upstream `salitronic/eda-agent` for offline Windows x64
 - `payload/` contains Python runtime helpers and `Start-EdaAgent.cmd` copied into bundles.
 - `installer/` contains setup, integration cleanup, and the Altium connection assistant; `EdaAgentOfflineSetup.iss` defines the bilingual Inno Setup wizard.
 - `tests/` contains PowerShell integration checks and Python regression/probe scripts.
+- `.github/workflows/release.yml` builds/tests both backends on Windows and publishes tagged releases without GitHub CLI; `release-source.json` pins upstream/Python inputs, and `Publish-GitHubRelease.ps1` validates and uploads release files.
 - `dist/` holds generated bundles/installers; `.work/` holds temporary build/test data. Both are ignored. `.tools/InnoSetup/` contains tracked compiler resources.
 
 ## Build, Test, and Development Commands

@@ -68,6 +68,40 @@ upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme
 
 Aşağıdaki PowerShell adımları elle kurulum veya bakım içindir.
 
+## GitHub Actions ile otomatik yayın
+
+`.github/workflows/release.yml`, `v*` etiketi gönderildiğinde GitHub'ın geçici Windows
+sunucusunda Altium ve KiCad paketlerini ayrı ayrı hazırlar. Çevrimdışı kurulum,
+ayar koruma, sihirbaz ve iki paketin birlikte kurulup kaldırılması testleri geçerse
+iki EXE'yi, SHA256 dosyalarını, `bundle.json` metadata dosyalarını ve çözümlenen
+`packages.lock.txt` listelerini aynı GitHub Release'e yükler. GitHub CLI veya kişisel
+erişim anahtarı gerekmez; otomatik `GITHUB_TOKEN` ile [GitHub API](https://docs.github.com/en/rest/releases/releases)
+kullanılır. Yayımlama yarıda kalırsa **Re-run jobs** taslağı tamamlar; yayımlanmış
+sürümler değiştirilmez.
+
+İlk yayın için bu otomasyonu içeren commit'ten sonra Eda deposunda etiket oluşturup gönderin:
+
+```powershell
+git tag -a v0.1.1 -m "Release EDA installers 0.1.1"
+git push --atomic origin main refs/tags/v0.1.1
+```
+
+Sonraki yayınlarda paket sürümlerini ve CHANGELOG'u güncelleyin, commit ve yeni
+etiket oluşturun. GitHub'da **Actions → Release EDA installers → Run workflow**
+üzerinden mevcut bir etiketi girerek de çalıştırabilirsiniz. Seçilen etiketin
+otomasyon dosyalarını içermesi gerekir. OpenCode deposunun `v1.1.3` etiketi Eda
+deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.1`'dir.
+
+`release-source.json` upstream EDA Agent commit'ini ve Python sürümünü sabitler;
+iki backend aynı kaynakla derlenir. Python bağımlılıkları her hazırlamada yeniden
+çözümlenir; aynı etiketle sonradan yapılan derleme birebir aynı paketleri garanti
+etmez. Dağıtımda yayımlanan EXE'yi ve beraberindeki metadata/bağımlılık listesini
+saklayın; yeni dağıtım için yeni sürüm kullanın. Doğrulanmış çıktılar ayrıca
+Actions artifact'i olarak 14 gün tutulur.
+
+Hedef bilgisayardaki kurulum yine internetsiz çalışır. GitHub testleri gerçek
+Altium/KiCad tasarım bağlantısını doğrulamaz; bu kontrol hedef EDA ortamında yapılır.
+
 ## 1. İnternetli bilgisayarda paketi hazırlayın
 
 Windows PowerShell 5.1 veya üzeriyle bu klasörde çalıştırın:

@@ -1,0 +1,100 @@
+name: Release EDA installers
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing EDA installer tag (for example v0.1.1)'
+        required: true
+        type: string
+
+concurrency:
+  group: eda-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Check out tagged sources
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release tag and pinned upstream
+        id: release
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') { $env:INPUT_TAG } else { $env:GITHUB_REF_NAME }
+          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:\.\d+)?)$') { throw 'Expected a tag such as v0.1.1.' }
+          $version = $Matches.version
+          $tagCommit = git rev-parse --verify "refs/tags/$tag^{commit}"
+          if ($LASTEXITCODE -ne 0) { throw 'Release tag does not exist.' }
+          $headCommit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $headCommit -ne $tagCommit) { throw 'Checkout does not match release tag.' }
+          $config = Get-Content release-source.json -Raw | ConvertFrom-Json
+          if ($config.sourceCommit -notmatch '^[a-fA-F0-9]{40}$' -or $config.pythonVersion -notmatch '^3\.13\.\d+$') { throw 'Invalid pinned source configuration.' }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build both offline bundles and installers
+        env:
+          SETUP_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $config = Get-Content release-source.json -Raw | ConvertFrom-Json
+          New-Item -ItemType Directory -Path dist/release -Force | Out-Null
+          foreach ($backend in @('altium', 'kicad')) {
+              ./Build-OfflineBundle.ps1 -Backend $backend -SourceCommit $config.sourceCommit -PythonVersion $config.pythonVersion
+              $bundles = @(Get-ChildItem dist -Directory -Filter "EdaAgent-$backend-*")
+              if ($bundles.Count -ne 1) { throw "Expected one fresh $backend bundle." }
+              $bundle = $bundles[0].FullName
+              ./Build-Installer.ps1 -Backend $backend -BundlePath $bundle -SetupVersion $env:SETUP_VERSION
+              $name = "EdaAgentOfflineSetup-$env:SETUP_VERSION-$backend"
+              Copy-Item -LiteralPath "dist/$name.exe", "dist/$name.exe.sha256" -Destination dist/release
+              Copy-Item -LiteralPath "$bundle/bundle.json" -Destination "dist/release/$name.bundle.json"
+              Copy-Item -LiteralPath "$bundle/packages.lock.txt" -Destination "dist/release/$name.packages.lock.txt"
+          }
+
+      - name: Test offline bundle, setup wizard, and backend isolation
+        env:
+          SETUP_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $altium = (Get-ChildItem dist -Directory -Filter EdaAgent-altium-*).FullName
+          ./tests/Test-OfflineBundle.ps1 -BundlePath $altium
+          ./tests/Test-SetupWizard.ps1 -InstallerPath "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe"
+          ./tests/Test-SeparatePackages.ps1 -AltiumInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe" -KiCadInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-kicad.exe"
+          ./tests/Test-ReleasePublication.ps1 -ReleaseDirectory ./dist/release -Tag "v$env:SETUP_VERSION"
+
+      - name: Keep verified release files as workflow artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: eda-installers-${{ steps.release.outputs.version }}
+          path: dist/release/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Publish both installers through GitHub API
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          ./Publish-GitHubRelease.ps1 -Tag $env:RELEASE_TAG
