@@ -2,7 +2,7 @@
 param(
     [string]$BundlePath,
     [ValidateSet('altium', 'kicad')][string]$Backend = 'altium',
-    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.2',
+    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.3',
     [string]$IsccPath
 )
 $ErrorActionPreference = 'Stop'
@@ -21,7 +21,7 @@ foreach ($row in $rows) {
     if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $row.sha256) { throw "Bundle checksum mismatch: $($row.path)" }
 }
 # Refuse a stale bundle when packaging recently changed runtime/setup helpers.
-foreach ($name in @('Install-Offline.ps1', 'README.md')) {
+foreach ($name in @('Install-Offline.ps1', 'README.md', 'LICENSE')) {
     if ((Get-FileHash (Join-Path $PSScriptRoot $name)).Hash -ne (Get-FileHash (Join-Path $BundlePath $name)).Hash) { throw "Stale bundle: $name. Prepare a new bundle." }
 }
 foreach ($name in @('launch.py', 'configure_opencode.py', 'Start-EdaAgent.cmd')) {

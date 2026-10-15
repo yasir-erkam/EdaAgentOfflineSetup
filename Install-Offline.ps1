@@ -83,7 +83,7 @@ try {
         New-Item -ItemType Directory -Path $InstallDir | Out-Null
         $createdInstall = $true
         Copy-Item -LiteralPath "$BundlePath\runtime" -Destination $InstallDir -Recurse
-        foreach ($name in @('launch.py', 'Start-EdaAgent.cmd', 'configure_opencode.py', 'bundle.json', 'packages.lock.txt', 'README.md', 'upstream')) {
+        foreach ($name in @('launch.py', 'Start-EdaAgent.cmd', 'configure_opencode.py', 'bundle.json', 'packages.lock.txt', 'README.md', 'LICENSE', 'upstream')) {
             Copy-Item -LiteralPath (Join-Path $BundlePath $name) -Destination $InstallDir -Recurse
         }
     }

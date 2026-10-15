@@ -1,5 +1,11 @@
 # Sürüm Notları
 
+## 0.1.3
+
+- Özgün kurulum ve paketleme kodu MIT lisansı ile sunulur; üçüncü taraf lisansları korunur.
+- LICENSE dosyası çevrimdışı paketlere ve kurulum dizinine dahil edilir.
+- EXE derlemesi, paketteki lisansın kaynak depodaki güncel lisansla eşleştiğini doğrular.
+
 ## 0.1.2
 
 - GitHub Release yüklemeleri Windows PowerShell 5.1 yerine PowerShell 7 ile yapılır.

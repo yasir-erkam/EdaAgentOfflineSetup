@@ -14,8 +14,8 @@ Kullandığınız EDA uygulamasına uygun ayrı paketi seçin:
 
 | EDA uygulaması | Kurulum dosyası | OpenCode MCP adı |
 | --- | --- | --- |
-| Altium Designer | `EdaAgentOfflineSetup-0.1.2-altium.exe` | `eda-agent` |
-| KiCad 9+ | `EdaAgentOfflineSetup-0.1.2-kicad.exe` | `eda-agent-kicad` |
+| Altium Designer | `EdaAgentOfflineSetup-0.1.3-altium.exe` | `eda-agent` |
+| KiCad 9+ | `EdaAgentOfflineSetup-0.1.3-kicad.exe` | `eda-agent-kicad` |
 
 Paketler ayrı uygulama kayıtları ve dizinler kullanır; birlikte kurulabilir.
 Birini kaldırmak diğerinin OpenCode bağlantısını veya çalışma dosyalarını silmez.
@@ -61,7 +61,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1 -Backe
 
 Seçilen backend için en yeni hazırlanmış paket seçilir; varsayılan backend
 `altium`'dur. `-BundlePath`,
-`-SetupVersion 0.1.2` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
+`-SetupVersion 0.1.3` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
 özelleştirilebilir. Kaynak scriptler değiştiyse eski paket reddedilir; yeniden
 hazırlayın. EXE ve `.sha256` dosyası `dist` altında üretilir. Derleme sürümü
 upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme yapmaz.
@@ -84,15 +84,15 @@ sürümler değiştirilmez.
 İlk yayın için bu otomasyonu içeren commit'ten sonra Eda deposunda etiket oluşturup gönderin:
 
 ```powershell
-git tag -a v0.1.2 -m "Release EDA installers 0.1.2"
-git push --atomic origin main refs/tags/v0.1.2
+git tag -a v0.1.3 -m "Release EDA installers 0.1.3"
+git push --atomic origin main refs/tags/v0.1.3
 ```
 
 Sonraki yayınlarda paket sürümlerini ve CHANGELOG'u güncelleyin, commit ve yeni
 etiket oluşturun. GitHub'da **Actions → Release EDA installers → Run workflow**
 üzerinden mevcut bir etiketi girerek de çalıştırabilirsiniz. Seçilen etiketin
 otomasyon dosyalarını içermesi gerekir. OpenCode deposunun `v1.1.3` etiketi Eda
-deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.2`'dir.
+deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.3`'dir.
 
 `release-source.json` upstream EDA Agent commit'ini ve Python sürümünü sabitler;
 iki backend aynı kaynakla derlenir. Python bağımlılıkları her hazırlamada yeniden
@@ -226,3 +226,11 @@ Bu test paketi Altium backend'i içindir. Gerçek OpenCode istemcisiyle ayrıca
 Kaynaklar: [eda-agent](https://github.com/salitronic/eda-agent),
 [Python Windows](https://www.python.org/downloads/windows/),
 [OpenCode MCP](https://opencode.ai/docs/mcp-servers/).
+
+## Lisans
+
+Bu depodaki özgün kurulum ve paketleme kodu [MIT lisansı](LICENSE) ile sunulur.
+EDA Agent, Python, Inno Setup ve diğer üçüncü taraf bileşenler kendi lisanslarına
+tabidir. Dağıtılan paketlerde upstream LICENSE/NOTICE dosyaları `upstream/`
+altında, Python bağımlılıklarının lisansları runtime paket metadata dizinlerinde
+korunur.

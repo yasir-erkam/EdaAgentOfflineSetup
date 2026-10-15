@@ -52,7 +52,7 @@ Invoke-Python -Arguments @('-c', 'import eda_agent.server, win32api, pythoncom, 
 if ($Backend -eq 'kicad') { Invoke-Python -Arguments @('-c', 'import kipy') }
 Write-Host 'Runtime imports OK'
 Copy-Item "$PSScriptRoot\payload\*" $bundle -Exclude 'sitecustomize.py'
-Copy-Item "$PSScriptRoot\Install-Offline.ps1", "$PSScriptRoot\Install.cmd", "$PSScriptRoot\README.md" $bundle
+Copy-Item "$PSScriptRoot\Install-Offline.ps1", "$PSScriptRoot\Install.cmd", "$PSScriptRoot\README.md", "$PSScriptRoot\LICENSE" $bundle
 $notices = New-Item -ItemType Directory -Path "$bundle\upstream" -Force
 Copy-Item "$source\LICENSE", "$source\NOTICE", "$source\README.md" $notices.FullName
 $manifest = [ordered]@{
