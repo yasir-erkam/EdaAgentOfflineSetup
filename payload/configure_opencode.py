@@ -78,10 +78,7 @@ def load_config(target):
     return data
 
 
-def configure(target, snippet):
-    data = load_config(target)
-    entry = json.loads(snippet.read_text(encoding="utf-8"))["mcp"]["eda-agent"]
-    data["mcp"]["eda-agent"] = entry
+def write_config(target, data):
     output = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():
@@ -99,17 +96,41 @@ def configure(target, snippet):
             os.unlink(name)
 
 
+def configure(target, snippet):
+    data = load_config(target)
+    entry = json.loads(snippet.read_text(encoding="utf-8"))["mcp"]["eda-agent"]
+    data["mcp"]["eda-agent"] = entry
+    write_config(target, data)
+
+
+def remove_owned(target, snippet):
+    if not target.exists():
+        return
+    data = load_config(target)
+    entry = data["mcp"].get("eda-agent")
+    expected = json.loads(snippet.read_text(encoding="utf-8"))["mcp"]["eda-agent"]
+    if not isinstance(entry, dict) or entry.get("command") != expected["command"]:
+        return
+    del data["mcp"]["eda-agent"]
+    if not data["mcp"]:
+        del data["mcp"]
+    write_config(target, data)
+
+
 if __name__ == "__main__":
     try:
         parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument("target", type=Path)
         parser.add_argument("snippet", type=Path, nargs="?")
         parser.add_argument("--check", action="store_true", help="Validate without writing")
+        parser.add_argument("--remove-owned", action="store_true", help="Remove only this installation's MCP entry")
         args = parser.parse_args()
         if args.check:
             load_config(args.target)
         elif args.snippet is None:
             parser.error("snippet is required unless --check is used")
+        elif args.remove_owned:
+            remove_owned(args.target, args.snippet)
         else:
             configure(args.target, args.snippet)
     except Exception as exc:

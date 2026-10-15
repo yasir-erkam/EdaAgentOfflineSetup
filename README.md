@@ -5,6 +5,49 @@ bilgisayarlara taşınabilir bir paketle kurar. Python ve tüm Python bağımlı
 paketin içindedir; hedef bilgisayarda Python, pip, Git veya internet gerekmez.
 Windows 10/11 x64 ve kurulu/lisanslı EDA uygulaması gerekir.
 
+## Son kullanıcı için: tek EXE ile kurulum
+
+**Ön koşul:** Bu kuruluma başlamadan önce OpenCode'u kurun. OpenCode bu pakete
+dahil değildir; ayrı kurulmalıdır.
+
+`EdaAgentOfflineSetup-0.1.0-altium.exe` dosyasını hedef bilgisayara taşıyıp çift
+tıklayın. Türkçe veya İngilizce sihirbazdan kurulum dizinini seçin. Önerilen
+**EDA Agent'ı OpenCode'a otomatik ekle** seçeneğini açık bırakın. Python veya
+PowerShell komutu çalıştırmanız gerekmez; tüm bağımlılıklar EXE içindedir.
+
+Kurulum sonunda **Altium bağlantı yardımcısını aç** seçeneğini kullanın. Altium'u
+açıp projenizi yükledikten sonra **Altium'a bağlan** düğmesine basın. Yardımcı,
+upstream `relaunch` komutuyla çalışan Altium oturumuna scripti başlatma isteği
+gönderir. OpenCode'u yeniden başlatın. Yardımcıya daha sonra Başlat menüsündeki
+**EDA Agent > Altium Bağlantı Yardımcısı** kısayolundan ulaşabilirsiniz.
+
+Altium sürümünüz doğrudan başlatmayı desteklemiyorsa yardımcıdaki elle tanıtma
+adımlarını izleyin; script yolu kopyalanabilir ve klasörü tek düğmeyle açılabilir.
+Gerçek Altium bağlantısı hedef bilgisayarda doğrulanmalıdır.
+
+Windows'un uygulama kaldırma ekranı yalnız bu kurulumun OpenCode kaydını ve
+Altium işaretçisini temizler. Diğer MCP'ler, sağlayıcı/API anahtarı ayarları,
+ayar yedekleri ve `workspace` içeriği korunur. Aynı dizine yeniden kurulum
+desteklenir; önce OpenCode ve Altium'u kapatın.
+
+## Tek EXE paketini üretme
+
+İnternetli hazırlama bilgisayarında önce aşağıdaki bölümdeki
+`Build-OfflineBundle.ps1` komutuyla paketi hazırlayın. Ardından Inno Setup 6
+derleyicisiyle çalıştırın:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1
+```
+
+En yeni hazırlanmış paket varsayılan olarak seçilir. `-BundlePath`,
+`-SetupVersion 0.1.0` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
+özelleştirilebilir. Kaynak scriptler değiştiyse eski paket reddedilir; yeniden
+hazırlayın. EXE ve `.sha256` dosyası `dist` altında üretilir. Derleme sürümü
+upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme yapmaz.
+
+Aşağıdaki PowerShell adımları elle kurulum veya bakım içindir.
+
 ## 1. İnternetli bilgisayarda paketi hazırlayın
 
 Windows PowerShell 5.1 veya üzeriyle bu klasörde çalıştırın:

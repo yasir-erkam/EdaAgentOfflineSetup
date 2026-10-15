@@ -11,6 +11,7 @@ import uuid
 helper = runpy.run_path(sys.argv.pop(1))
 parse_jsonc = helper["parse_jsonc"]
 configure = helper["configure"]
+remove_owned = helper["remove_owned"]
 temporary_root = Path(__file__).resolve().parents[1] / ".work"
 temporary_root.mkdir(exist_ok=True)
 
@@ -60,6 +61,30 @@ class ConfigurationTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     configure(target, Path(folder) / "does-not-exist.json")
                 self.assertEqual(target.read_bytes(), source)
+
+    def test_uninstall_removes_only_owned_entry(self):
+        with fixture_directory() as folder:
+            target = folder / "config.jsonc"
+            snippet = folder / "mcp.json"
+            entry = {"type": "local", "command": ["C:/EDA/python.exe", "C:/EDA/launch.py"], "enabled": True}
+            snippet.write_text(json.dumps({"mcp": {"eda-agent": entry}}))
+            data = {"provider": {"test": {"apiKey": "keep"}}, "mcp": {"other": {"enabled": False}, "eda-agent": entry}}
+            target.write_text(json.dumps(data))
+            remove_owned(target, snippet)
+            result = json.loads(target.read_text())
+            self.assertEqual(result["provider"], data["provider"])
+            self.assertEqual(result["mcp"], {"other": {"enabled": False}})
+
+    def test_uninstall_preserves_different_installation(self):
+        with fixture_directory() as folder:
+            target = folder / "config.jsonc"
+            snippet = folder / "mcp.json"
+            original = b'{"mcp":{"eda-agent":{"command":["other-python.exe","other-launch.py"]}}}'
+            target.write_bytes(original)
+            snippet.write_text('{"mcp":{"eda-agent":{"command":["owned-python.exe","owned-launch.py"]}}}')
+            remove_owned(target, snippet)
+            self.assertEqual(target.read_bytes(), original)
+            self.assertFalse(list(folder.glob("*.bak")))
 
 
 if __name__ == "__main__":

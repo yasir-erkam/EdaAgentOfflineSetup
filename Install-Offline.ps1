@@ -3,7 +3,8 @@ param(
     [string]$BundlePath = $PSScriptRoot,
     [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'EdaAgent'),
     [switch]$ConfigureOpenCode,
-    [string]$OpenCodeConfig
+    [string]$OpenCodeConfig,
+    [switch]$ConfigureExisting
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -12,8 +13,12 @@ if ($OpenCodeConfig -and -not $ConfigureOpenCode) { throw '-OpenCodeConfig requi
 $BundlePath = (Resolve-Path -LiteralPath $BundlePath).Path
 $bundlePrefix = $BundlePath.TrimEnd('\') + '\'
 $InstallDir = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\')
-if ($InstallDir.StartsWith($bundlePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'InstallDir must be outside the source bundle.' }
-if (Test-Path -LiteralPath $InstallDir) { throw "Destination already exists. Choose a new -InstallDir: $InstallDir" }
+if ($ConfigureExisting) {
+    if ($InstallDir -ne $BundlePath.TrimEnd('\')) { throw 'ConfigureExisting requires BundlePath and InstallDir to be the same directory.' }
+} else {
+    if ($InstallDir.StartsWith($bundlePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'InstallDir must be outside the source bundle.' }
+    if (Test-Path -LiteralPath $InstallDir) { throw "Destination already exists. Choose a new -InstallDir: $InstallDir" }
+}
 if (-not (Test-Path -LiteralPath "$BundlePath\checksums.json")) { throw 'Prepared bundle missing. Run Build-OfflineBundle.ps1 on an online PC first.' }
 Write-Host 'Verifying offline bundle...'
 $checksums = Get-Content -LiteralPath "$BundlePath\checksums.json" -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -30,10 +35,12 @@ if ($manifest.schemaVersion -ne 1 -or $manifest.backend -notin @('altium', 'kica
 # Refuse extra Python files as well as missing or altered files.
 $known = @{}
 foreach ($item in $checksums) { $known[$item.path.Replace('/', '\')] = $true }
-foreach ($file in Get-ChildItem -LiteralPath $BundlePath -Recurse -File) {
-    $relative = $file.FullName.Substring($bundlePrefix.Length)
-    if ($relative -eq 'checksums.json') { continue }
-    if (-not $known.ContainsKey($relative)) { throw "Unexpected bundle file: $relative" }
+if (-not $ConfigureExisting) {
+    foreach ($file in Get-ChildItem -LiteralPath $BundlePath -Recurse -File) {
+        $relative = $file.FullName.Substring($bundlePrefix.Length)
+        if ($relative -eq 'checksums.json') { continue }
+        if (-not $known.ContainsKey($relative)) { throw "Unexpected bundle file: $relative" }
+    }
 }
 if ($ConfigureOpenCode) {
     if (-not $OpenCodeConfig) {
@@ -60,12 +67,21 @@ if ($manifest.backend -eq 'altium') {
 }
 $createdInstall = $false
 $pointerAttempted = $false
+$previousGenerated = @{}
+if ($ConfigureExisting) {
+    foreach ($name in @('installation.json', 'opencode.mcp.json', 'setup-state.json')) {
+        $file = Join-Path $InstallDir $name
+        $previousGenerated[$name] = if (Test-Path -LiteralPath $file) { [IO.File]::ReadAllBytes($file) } else { $null }
+    }
+}
 try {
-    New-Item -ItemType Directory -Path $InstallDir | Out-Null
-    $createdInstall = $true
-    Copy-Item -LiteralPath "$BundlePath\runtime" -Destination $InstallDir -Recurse
-    foreach ($name in @('launch.py', 'Start-EdaAgent.cmd', 'configure_opencode.py', 'bundle.json', 'packages.lock.txt', 'README.md', 'upstream')) {
-        Copy-Item -LiteralPath (Join-Path $BundlePath $name) -Destination $InstallDir -Recurse
+    if (-not $ConfigureExisting) {
+        New-Item -ItemType Directory -Path $InstallDir | Out-Null
+        $createdInstall = $true
+        Copy-Item -LiteralPath "$BundlePath\runtime" -Destination $InstallDir -Recurse
+        foreach ($name in @('launch.py', 'Start-EdaAgent.cmd', 'configure_opencode.py', 'bundle.json', 'packages.lock.txt', 'README.md', 'upstream')) {
+            Copy-Item -LiteralPath (Join-Path $BundlePath $name) -Destination $InstallDir -Recurse
+        }
     }
     [IO.File]::WriteAllText("$InstallDir\installation.json", (@{ backend = $manifest.backend } | ConvertTo-Json), $utf8)
     $python = Join-Path $InstallDir 'runtime\python.exe'
@@ -75,7 +91,7 @@ try {
     New-Item -ItemType Directory -Path "$InstallDir\workspace" -Force | Out-Null
     if ($manifest.backend -eq 'altium') {
         $pointerAttempted = $true
-        & $python $launcher install-scripts --dest "$InstallDir\scripts"
+        & $python $launcher install-scripts --dest "$InstallDir\scripts" --force
         if ($LASTEXITCODE -ne 0) { throw 'Altium script deployment failed.' }
         if (-not (Test-Path -LiteralPath $pointer -PathType Leaf)) { throw "Cannot write Altium workspace pointer: $pointer. Ask IT to grant write access." }
         $actualPointer = [IO.File]::ReadAllText($pointer, [Text.Encoding]::Default).TrimEnd('\')
@@ -84,6 +100,13 @@ try {
     $entry = [ordered]@{ type = 'local'; command = @($python, $launcher); enabled = $true; timeout = 60000 }
     $snippet = @{ mcp = @{ 'eda-agent' = $entry } } | ConvertTo-Json -Depth 8
     [IO.File]::WriteAllText("$InstallDir\opencode.mcp.json", $snippet, $utf8)
+    # Record only the integration location; never duplicate provider/API key settings.
+    $registeredConfig = if ($ConfigureOpenCode) { $OpenCodeConfig } else { $null }
+    if (-not $ConfigureOpenCode -and (Test-Path -LiteralPath "$InstallDir\setup-state.json")) {
+        $previousState = Get-Content -LiteralPath "$InstallDir\setup-state.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+        $registeredConfig = $previousState.configPath
+    }
+    [IO.File]::WriteAllText("$InstallDir\setup-state.json", (@{ configPath = $registeredConfig } | ConvertTo-Json), $utf8)
     if ($ConfigureOpenCode) {
         & $python "$InstallDir\configure_opencode.py" $OpenCodeConfig "$InstallDir\opencode.mcp.json"
         if ($LASTEXITCODE -ne 0) { throw 'OpenCode configuration failed; existing configuration was preserved.' }
@@ -92,6 +115,18 @@ try {
     $failure = $_
     $canRemove = $true
     try {
+        if ($ConfigureExisting) {
+            foreach ($name in $previousGenerated.Keys) {
+                $file = Join-Path $InstallDir $name
+                if ($null -eq $previousGenerated[$name]) {
+                    if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file }
+                } else {
+                    $before = [Convert]::ToBase64String([byte[]]$previousGenerated[$name])
+                    $after = if (Test-Path -LiteralPath $file) { [Convert]::ToBase64String([IO.File]::ReadAllBytes($file)) } else { '' }
+                    if ($before -ne $after) { [IO.File]::WriteAllBytes($file, [byte[]]$previousGenerated[$name]) }
+                }
+            }
+        }
         if ($pointerAttempted -and (Test-Path -LiteralPath $pointer -PathType Leaf)) {
             $currentPointer = [IO.File]::ReadAllText($pointer, [Text.Encoding]::Default).TrimEnd('\')
             if ($currentPointer -eq "$InstallDir\workspace") {
