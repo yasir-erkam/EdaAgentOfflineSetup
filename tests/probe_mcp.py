@@ -1,4 +1,4 @@
-"""Read-only MCP handshake and tool discovery; never invoke design tools."""
+"""Read-only MCP handshake and catalog discovery; never invoke design tools."""
 import json
 import os
 from pathlib import Path
@@ -52,18 +52,45 @@ with errors.open("w", encoding="utf-8") as stderr:
             "protocolVersion": "2024-11-05", "capabilities": {},
             "clientInfo": {"name": "offline-bundle-probe", "version": "1.0"},
         }})
-        receive(1)
+        initialization = receive(1)
         send({"jsonrpc": "2.0", "method": "notifications/initialized"})
         send({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
         tools = receive(2)["tools"]
         assert tools, "Server advertised no tools"
         names = {tool["name"] for tool in tools}
+        expected_toolset = environment.get("EDA_AGENT_TOOLSET", "minimal")
+        if expected_toolset == "minimal":
+            assert names == {"tool_catalog", "tool_invoke"}, "Minimal tool surface changed"
+        # The full catalog must remain discoverable, including backend isolation.
+        send({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
+            "name": "tool_catalog", "arguments": {},
+        }})
+        catalog_result = receive(3)
+        assert not catalog_result.get("isError"), catalog_result
+        catalog = json.loads(next(item["text"] for item in catalog_result["content"] if item["type"] == "text"))
+        catalog_names = {tool["name"] for tool in catalog["tools"]}
         if backend == "kicad":
-            assert "kicad_ping" in names, "KiCad tools are missing"
+            assert "kicad_ping" in catalog_names, "KiCad tools are missing"
+            assert "app_get_status" not in catalog_names, "KiCad package advertised Altium tools"
         else:
-            assert "kicad_ping" not in names, "Altium package advertised KiCad tools"
+            assert "app_get_status" in catalog_names, "Altium tools are missing"
+            assert "kicad_ping" not in catalog_names, "Altium package advertised KiCad tools"
+        # Exercise dispatch using only the read-only catalog, never an EDA call.
+        query = "kicad_ping" if backend == "kicad" else "app_get_status"
+        send({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {
+            "name": "tool_invoke", "arguments": {
+                "name": "tool_catalog", "arguments": {"query": query, "with_schema": True},
+            },
+        }})
+        invocation_result = receive(4)
+        assert not invocation_result.get("isError"), invocation_result
+        invocation = json.loads(next(item["text"] for item in invocation_result["content"] if item["type"] == "text"))
+        assert invocation["tool"] == "tool_catalog", invocation
+        discovered = invocation["result"]["tools"]
+        assert any(tool["name"] == query and "parameters" in tool for tool in discovered), invocation
+        context_bytes = len(json.dumps({"instructions": initialization.get("instructions", ""), "tools": tools}, ensure_ascii=False).encode("utf-8"))
         assert not network_log.exists(), f"External network attempted; see {network_log}"
-        print(f"MCP {backend}: initialize and tools/list OK: {len(tools)} tools, {time.monotonic() - started:.2f}s, external network blocked")
+        print(f"MCP {backend} ({expected_toolset}): {len(tools)} advertised tools, {len(catalog_names)} discoverable tools, {context_bytes} context bytes; catalog/schema/dispatch OK, {time.monotonic() - started:.2f}s, external network blocked")
     finally:
         process.terminate()
         try:

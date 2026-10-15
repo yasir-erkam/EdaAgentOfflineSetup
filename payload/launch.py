@@ -8,6 +8,9 @@ root = Path(__file__).resolve().parent
 settings = json.loads((root / "installation.json").read_text(encoding="utf-8"))
 os.environ["EDA_AGENT_BACKEND"] = settings["backend"]
 os.environ["EDA_AGENT_WORKSPACE"] = str(root / "workspace")
+# Discover schemas on demand instead of sending every EDA tool to the model.
+# Set before importing eda_agent: its tool registry is built at import time.
+os.environ.setdefault("EDA_AGENT_TOOLSET", "minimal")
 if settings["backend"] == "kicad":
     # Upstream initializes an Altium pointer even on KiCad. Keep it private so
     # starting KiCad never redirects a running Altium session.

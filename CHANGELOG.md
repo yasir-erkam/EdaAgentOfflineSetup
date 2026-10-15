@@ -1,5 +1,13 @@
 # Sürüm Notları
 
+## 0.1.4
+
+- Altium ve KiCad paketleri varsayılan olarak `minimal` MCP araç modunda başlar; yüzlerce araç şeması model bağlamına başlangıçta yüklenmez.
+- Tüm araçlar `tool_catalog` ile keşfedilip `tool_invoke` ile çağrılabilir. `EDA_AGENT_TOOLSET=full` seçeneği korunur.
+- Sabitlenmiş upstream ile Altium başlangıç verisi 778.233 bayttan 6.943 bayta, KiCad başlangıç verisi 82.259 bayttan 5.152 bayta düşer. Bunlar token sayısı değil, yönerge ve araç tanımlarının JSON boyutlarıdır.
+- Çevrimdışı MCP kontrolleri araç kataloğu, parametre keşfi, çağrı yönlendirmesi ve Altium/KiCad ayrımını doğrular.
+- Kurulumdan sonra OpenCode'u yeniden başlatıp yeni sohbet açın. Önceki konuşmanın geçmişi otomatik olarak küçülmez.
+
 ## 0.1.3
 
 - Özgün kurulum ve paketleme kodu MIT lisansı ile sunulur; üçüncü taraf lisansları korunur.

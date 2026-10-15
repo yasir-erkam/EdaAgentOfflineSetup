@@ -180,6 +180,11 @@ $edaDir = Join-Path $env:LOCALAPPDATA 'EdaAgent'
 
 `opencode.json` kullanıyorsanız komutta bu dosyayı belirtin.
 
+Yeni paketler bağlam kullanımını azaltmak için `minimal` araç modunu kullanır.
+Mevcut kurulumda context window hatası alıyorsanız MCP kaydına
+`"environment": {"EDA_AGENT_TOOLSET": "minimal"}` ekleyip OpenCode'u yeniden
+başlatın ve yeni sohbet açın. Ayrıntılar: [MCP bağlam ayarı](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/main/docs/mcp-context.md).
+
 ## 4. EDA bağlantısını etkinleştirin
 
 **Altium Designer:** DXP → Preferences → Scripting System → Global Projects →

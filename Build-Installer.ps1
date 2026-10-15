@@ -2,7 +2,7 @@
 param(
     [string]$BundlePath,
     [ValidateSet('altium', 'kicad')][string]$Backend = 'altium',
-    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.3',
+    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.4',
     [string]$IsccPath
 )
 $ErrorActionPreference = 'Stop'
