@@ -14,8 +14,8 @@ Kullandığınız EDA uygulamasına uygun ayrı paketi seçin:
 
 | EDA uygulaması | Kurulum dosyası | OpenCode MCP adı |
 | --- | --- | --- |
-| Altium Designer | `EdaAgentOfflineSetup-0.1.1-altium.exe` | `eda-agent` |
-| KiCad 9+ | `EdaAgentOfflineSetup-0.1.1-kicad.exe` | `eda-agent-kicad` |
+| Altium Designer | `EdaAgentOfflineSetup-0.1.2-altium.exe` | `eda-agent` |
+| KiCad 9+ | `EdaAgentOfflineSetup-0.1.2-kicad.exe` | `eda-agent-kicad` |
 
 Paketler ayrı uygulama kayıtları ve dizinler kullanır; birlikte kurulabilir.
 Birini kaldırmak diğerinin OpenCode bağlantısını veya çalışma dosyalarını silmez.
@@ -61,7 +61,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1 -Backe
 
 Seçilen backend için en yeni hazırlanmış paket seçilir; varsayılan backend
 `altium`'dur. `-BundlePath`,
-`-SetupVersion 0.1.1` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
+`-SetupVersion 0.1.2` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
 özelleştirilebilir. Kaynak scriptler değiştiyse eski paket reddedilir; yeniden
 hazırlayın. EXE ve `.sha256` dosyası `dist` altında üretilir. Derleme sürümü
 upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme yapmaz.
@@ -76,21 +76,23 @@ ayar koruma, sihirbaz ve iki paketin birlikte kurulup kaldırılması testleri g
 iki EXE'yi, SHA256 dosyalarını, `bundle.json` metadata dosyalarını ve çözümlenen
 `packages.lock.txt` listelerini aynı GitHub Release'e yükler. GitHub CLI veya kişisel
 erişim anahtarı gerekmez; otomatik `GITHUB_TOKEN` ile [GitHub API](https://docs.github.com/en/rest/releases/releases)
-kullanılır. Yayımlama yarıda kalırsa **Re-run jobs** taslağı tamamlar; yayımlanmış
+kullanılır. Yükleme adımı PowerShell 7 ile çalışır; dosya bazında ilerlemeyi yazar
+ve geçici bağlantı hatalarında en fazla üç kez dener. Yeniden denemeden önce yarım
+kalan aynı adlı dosyayı taslaktan temizler. Yayımlama yarıda kalırsa **Re-run jobs** taslağı tamamlar; yayımlanmış
 sürümler değiştirilmez.
 
 İlk yayın için bu otomasyonu içeren commit'ten sonra Eda deposunda etiket oluşturup gönderin:
 
 ```powershell
-git tag -a v0.1.1 -m "Release EDA installers 0.1.1"
-git push --atomic origin main refs/tags/v0.1.1
+git tag -a v0.1.2 -m "Release EDA installers 0.1.2"
+git push --atomic origin main refs/tags/v0.1.2
 ```
 
 Sonraki yayınlarda paket sürümlerini ve CHANGELOG'u güncelleyin, commit ve yeni
 etiket oluşturun. GitHub'da **Actions → Release EDA installers → Run workflow**
 üzerinden mevcut bir etiketi girerek de çalıştırabilirsiniz. Seçilen etiketin
 otomasyon dosyalarını içermesi gerekir. OpenCode deposunun `v1.1.3` etiketi Eda
-deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.1`'dir.
+deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.2`'dir.
 
 `release-source.json` upstream EDA Agent commit'ini ve Python sürümünü sabitler;
 iki backend aynı kaynakla derlenir. Python bağımlılıkları her hazırlamada yeniden

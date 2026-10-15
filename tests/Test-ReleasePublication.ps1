@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$ReleaseDirectory,
-    [ValidatePattern('^v\d+\.\d+\.\d+(\.\d+)?$')][string]$Tag = 'v0.1.1'
+    [ValidatePattern('^v\d+\.\d+\.\d+(\.\d+)?$')][string]$Tag = 'v0.1.2'
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
@@ -12,7 +12,7 @@ $oldRepository = $env:GITHUB_REPOSITORY
 $global:edaReleaseTestCalls = [Collections.Generic.List[string]]::new()
 $global:edaReleaseTestMode = 'success'
 function Invoke-RestMethod {
-    param($Uri, $Method = 'Get', $Headers, $ContentType, $Body, $InFile)
+    param($Uri, $Method = 'Get', $Headers, $ContentType, $Body, $InFile, $TimeoutSec)
     if ($Headers.Authorization -ne 'Bearer fixture-token') { throw 'Unexpected token.' }
     $operation = if ($Uri -match '/releases/tags/') { 'lookup' }
         elseif ($Uri -match '/git/ref/tags/') { 'tag' }
@@ -20,7 +20,9 @@ function Invoke-RestMethod {
         elseif ($Uri -match '^https://uploads.github.com/') { 'upload' }
         elseif ($Method -eq 'Patch') { 'publish' }
         elseif ($Method -eq 'Post') { 'create' }
+        elseif ($Uri -match '/releases/123$') { 'refresh' }
         else { throw "Unexpected API request: $Uri" }
+    if (($operation -eq 'upload' -and $TimeoutSec -ne 600) -or ($operation -ne 'upload' -and $TimeoutSec -ne 60)) { throw 'Expected bounded API timeouts.' }
     $global:edaReleaseTestCalls.Add($operation)
     if ($operation -eq 'lookup') {
         if ($global:edaReleaseTestMode -eq 'network') { throw 'Network unavailable.' }
@@ -38,17 +40,37 @@ function Invoke-RestMethod {
     }
     if ($operation -eq 'upload') {
         if (-not (Test-Path -LiteralPath $InFile) -or $Uri -match '\{' -or $ContentType -ne 'application/octet-stream') { throw 'Invalid upload.' }
-        if ($global:edaReleaseTestMode -eq 'upload-failure') { throw 'Upload interrupted.' }
+        $name = [IO.Path]::GetFileName($InFile)
+        $global:edaReleaseTestLastUpload = $name
+        $global:edaReleaseTestUploadCounts[$name]++
+        if ($name -eq "EdaAgentOfflineSetup-$version-kicad.exe") {
+            $first = $global:edaReleaseTestUploadCounts[$name] -eq 1
+            if ($global:edaReleaseTestMode -eq 'upload-failure' -or ($first -and $global:edaReleaseTestMode -in @('transient', 'published-during-upload'))) { throw 'Upload interrupted.' }
+            if ($first -and $global:edaReleaseTestMode -in @('server-error', 'forbidden')) {
+                $code = if ($global:edaReleaseTestMode -eq 'forbidden') { 403 } else { 503 }
+                $failure = [Exception]::new('Upload HTTP error')
+                $failure | Add-Member -NotePropertyName Response -NotePropertyValue ([pscustomobject]@{ StatusCode = $code })
+                throw $failure
+            }
+        }
+    }
+    if ($operation -eq 'refresh') {
+        return @{ draft = $global:edaReleaseTestMode -ne 'published-during-upload'; id = 123; upload_url = 'https://uploads.github.com/repos/fixture/repo/releases/123/assets{?name,label}'; assets = @(@{ name = $global:edaReleaseTestLastUpload; id = 99 }) }
     }
     if ($operation -eq 'publish') {
         if (($Body | ConvertFrom-Json).draft -ne $false) { throw 'Expected final publication.' }
         return @{ html_url = 'https://example.invalid/release' }
     }
 }
+function Start-Sleep {
+    param([int]$Seconds)
+    if ($Seconds -notin @(2, 4)) { throw 'Unexpected retry delay.' }
+}
 function Assert-Scenario {
     param([string]$Mode, [bool]$ShouldFail, [string]$ExpectedCalls)
     $global:edaReleaseTestMode = $Mode
     $global:edaReleaseTestCalls.Clear()
+    $global:edaReleaseTestUploadCounts = @{}
     $failed = $false
     try { & (Join-Path $projectRoot 'Publish-GitHubRelease.ps1') -Tag $Tag -ReleaseDirectory $fixture }
     catch { $failed = $true; Write-Host "Expected stop (${Mode}): $($_.Exception.Message)" }
@@ -66,7 +88,13 @@ try {
     Assert-Scenario published $false 'lookup'
     Assert-Scenario network $true 'lookup'
     Assert-Scenario missing-tag $true 'lookup,tag'
-    Assert-Scenario upload-failure $true 'lookup,tag,create,upload'
+    $beforeKiCad = 'lookup,tag,create,upload,upload,upload,upload,upload'
+    $afterRetry = 'refresh,delete,upload,upload,upload,upload,publish'
+    Assert-Scenario transient $false "$beforeKiCad,$afterRetry"
+    Assert-Scenario server-error $false "$beforeKiCad,$afterRetry"
+    Assert-Scenario forbidden $true $beforeKiCad
+    Assert-Scenario published-during-upload $true "$beforeKiCad,refresh"
+    Assert-Scenario upload-failure $true "$beforeKiCad,refresh,delete,upload,refresh,delete,upload"
     $checksum = Join-Path $fixture "EdaAgentOfflineSetup-$version-kicad.exe.sha256"
     $originalChecksum = [IO.File]::ReadAllText($checksum)
     [IO.File]::WriteAllText($checksum, ('0' * 64) + "  EdaAgentOfflineSetup-$version-kicad.exe`r`n")

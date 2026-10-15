@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing EDA installer tag (for example v0.1.1)'
+        description: 'Existing EDA installer tag (for example v0.1.2)'
         required: true
         type: string
 
@@ -42,7 +42,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $tag = if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') { $env:INPUT_TAG } else { $env:GITHUB_REF_NAME }
-          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:\.\d+)?)$') { throw 'Expected a tag such as v0.1.1.' }
+          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:\.\d+)?)$') { throw 'Expected a tag such as v0.1.2.' }
           $version = $Matches.version
           $tagCommit = git rev-parse --verify "refs/tags/$tag^{commit}"
           if ($LASTEXITCODE -ne 0) { throw 'Release tag does not exist.' }
@@ -81,6 +81,12 @@ jobs:
           ./tests/Test-OfflineBundle.ps1 -BundlePath $altium
           ./tests/Test-SetupWizard.ps1 -InstallerPath "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe"
           ./tests/Test-SeparatePackages.ps1 -AltiumInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe" -KiCadInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-kicad.exe"
+
+      - name: Test release publication with PowerShell 7
+        shell: pwsh
+        env:
+          SETUP_VERSION: ${{ steps.release.outputs.version }}
+        run: |
           ./tests/Test-ReleasePublication.ps1 -ReleaseDirectory ./dist/release -Tag "v$env:SETUP_VERSION"
 
       - name: Keep verified release files as workflow artifacts
@@ -93,6 +99,8 @@ jobs:
           retention-days: 14
 
       - name: Publish both installers through GitHub API
+        shell: pwsh
+        timeout-minutes: 35
         env:
           GITHUB_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
