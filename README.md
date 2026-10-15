@@ -117,4 +117,3 @@ Bu test paketi Altium backend'i içindir. Gerçek OpenCode istemcisiyle ayrıca
 Kaynaklar: [eda-agent](https://github.com/salitronic/eda-agent),
 [Python Windows](https://www.python.org/downloads/windows/),
 [OpenCode MCP](https://opencode.ai/docs/mcp-servers/).
-# EdaAgentOfflineSetup
