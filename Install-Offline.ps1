@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$BundlePath = $PSScriptRoot,
-    [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'EdaAgent'),
+    [string]$InstallDir,
     [switch]$ConfigureOpenCode,
     [string]$OpenCodeConfig,
     [switch]$ConfigureExisting
@@ -12,6 +12,13 @@ if (-not [Environment]::Is64BitOperatingSystem) { throw 'Windows x64 is required
 if ($OpenCodeConfig -and -not $ConfigureOpenCode) { throw '-OpenCodeConfig requires -ConfigureOpenCode.' }
 $BundlePath = (Resolve-Path -LiteralPath $BundlePath).Path
 $bundlePrefix = $BundlePath.TrimEnd('\') + '\'
+if (-not (Test-Path -LiteralPath "$BundlePath\checksums.json")) { throw 'Prepared bundle missing. Run Build-OfflineBundle.ps1 on an online PC first.' }
+$manifest = Get-Content -LiteralPath "$BundlePath\bundle.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+if ($manifest.schemaVersion -ne 1 -or $manifest.backend -notin @('altium', 'kicad')) { throw 'Unsupported bundle.' }
+if (-not $InstallDir) {
+    $directoryName = if ($manifest.backend -eq 'kicad') { 'EdaAgentKiCad' } else { 'EdaAgent' }
+    $InstallDir = Join-Path $env:LOCALAPPDATA $directoryName
+}
 $InstallDir = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\')
 if ($ConfigureExisting) {
     if ($InstallDir -ne $BundlePath.TrimEnd('\')) { throw 'ConfigureExisting requires BundlePath and InstallDir to be the same directory.' }
@@ -19,7 +26,6 @@ if ($ConfigureExisting) {
     if ($InstallDir.StartsWith($bundlePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'InstallDir must be outside the source bundle.' }
     if (Test-Path -LiteralPath $InstallDir) { throw "Destination already exists. Choose a new -InstallDir: $InstallDir" }
 }
-if (-not (Test-Path -LiteralPath "$BundlePath\checksums.json")) { throw 'Prepared bundle missing. Run Build-OfflineBundle.ps1 on an online PC first.' }
 Write-Host 'Verifying offline bundle...'
 $checksums = Get-Content -LiteralPath "$BundlePath\checksums.json" -Raw -Encoding UTF8 | ConvertFrom-Json
 $checksums = @($checksums)
@@ -30,8 +36,6 @@ foreach ($item in $checksums) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing bundle file: $($item.path)" }
     if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $item.sha256) { throw "Checksum mismatch: $($item.path)" }
 }
-$manifest = Get-Content -LiteralPath "$BundlePath\bundle.json" -Raw -Encoding UTF8 | ConvertFrom-Json
-if ($manifest.schemaVersion -ne 1 -or $manifest.backend -notin @('altium', 'kicad')) { throw 'Unsupported bundle.' }
 # Refuse extra Python files as well as missing or altered files.
 $known = @{}
 foreach ($item in $checksums) { $known[$item.path.Replace('/', '\')] = $true }
@@ -88,6 +92,10 @@ try {
     $launcher = Join-Path $InstallDir 'launch.py'
     & $python -c 'import eda_agent.server, win32api, pythoncom, comtypes, numpy, scipy'
     if ($LASTEXITCODE -ne 0) { throw 'Runtime check failed.' }
+    if ($manifest.backend -eq 'kicad') {
+        & $python -c 'import kipy'
+        if ($LASTEXITCODE -ne 0) { throw 'KiCad IPC client is missing.' }
+    }
     New-Item -ItemType Directory -Path "$InstallDir\workspace" -Force | Out-Null
     if ($manifest.backend -eq 'altium') {
         $pointerAttempted = $true
@@ -98,7 +106,8 @@ try {
         if ($actualPointer -ne "$InstallDir\workspace") { throw "Altium workspace pointer was not updated: $pointer" }
     }
     $entry = [ordered]@{ type = 'local'; command = @($python, $launcher); enabled = $true; timeout = 60000 }
-    $snippet = @{ mcp = @{ 'eda-agent' = $entry } } | ConvertTo-Json -Depth 8
+    $mcpName = if ($manifest.backend -eq 'kicad') { 'eda-agent-kicad' } else { 'eda-agent' }
+    $snippet = @{ mcp = @{ $mcpName = $entry } } | ConvertTo-Json -Depth 8
     [IO.File]::WriteAllText("$InstallDir\opencode.mcp.json", $snippet, $utf8)
     # Record only the integration location; never duplicate provider/API key settings.
     $registeredConfig = if ($ConfigureOpenCode) { $OpenCodeConfig } else { $null }

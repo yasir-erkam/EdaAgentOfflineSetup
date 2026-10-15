@@ -86,6 +86,21 @@ class ConfigurationTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), original)
             self.assertFalse(list(folder.glob("*.bak")))
 
+    def test_altium_and_kicad_coexist(self):
+        with fixture_directory() as folder:
+            target = folder / "config.jsonc"
+            altium = folder / "altium.json"
+            kicad = folder / "kicad.json"
+            altium.write_text('{"mcp":{"eda-agent":{"command":["altium-python.exe","launch.py"]}}}')
+            kicad.write_text('{"mcp":{"eda-agent-kicad":{"command":["kicad-python.exe","launch.py"]}}}')
+            configure(target, altium)
+            configure(target, kicad)
+            self.assertEqual(set(json.loads(target.read_text())["mcp"]), {"eda-agent", "eda-agent-kicad"})
+            remove_owned(target, kicad)
+            self.assertEqual(set(json.loads(target.read_text())["mcp"]), {"eda-agent"})
+            remove_owned(target, altium)
+            self.assertNotIn("mcp", json.loads(target.read_text()))
+
 
 if __name__ == "__main__":
     unittest.main()

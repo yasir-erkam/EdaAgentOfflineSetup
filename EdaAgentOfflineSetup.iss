@@ -2,19 +2,30 @@
   #error Build using Build-Installer.ps1
 #endif
 #ifndef SetupVersion
-  #define SetupVersion "0.1.0"
+  #define SetupVersion "0.1.1"
+#endif
+#if Backend == "altium"
+  #define ProductName "EDA Agent for Altium"
+  #define ProductFolder "EdaAgent"
+  #define ProductId "{{5CC17F09-79DA-4E93-8587-D5A16DD19AD6}"
+  #define EdaName "Altium Designer"
+#else
+  #define ProductName "EDA Agent for KiCad"
+  #define ProductFolder "EdaAgentKiCad"
+  #define ProductId "{{D3D0D6D1-7F8A-4C2E-9A41-884C86E1506B}"
+  #define EdaName "KiCad"
 #endif
 
 [Setup]
-AppId={{5CC17F09-79DA-4E93-8587-D5A16DD19AD6}
-AppName=EDA Agent
-AppVerName=EDA Agent Offline Setup {#SetupVersion}
+AppId={#ProductId}
+AppName={#ProductName}
+AppVerName={#ProductName} Offline Setup {#SetupVersion}
 AppVersion={#SetupVersion}
 VersionInfoVersion={#SetupVersion}
 AppCopyright=© 2026 Yasir Erkam ÖZDEMİR
 AppPublisher=Yasir Erkam ÖZDEMİR
-DefaultDirName={localappdata}\Programs\EdaAgent
-DefaultGroupName=EDA Agent
+DefaultDirName={localappdata}\Programs\{#ProductFolder}
+DefaultGroupName={#ProductName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
@@ -34,16 +45,16 @@ Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-turkish.WelcomeLabel2=Bu sihirbaz EDA Agent ve gerekli Python bileşenlerini internet bağlantısı gerektirmeden kuracaktır.%n%nBu kuruluma başlamadan önce OpenCode'u kurmanız gerekir. OpenCode bu pakete dahil değildir.%n%nKurulum paketi sürümü: {#SetupVersion}%n%nDevam etmeden önce OpenCode ve Altium Designer'ı kapatın.
-english.WelcomeLabel2=This wizard will install EDA Agent and its Python runtime without an internet connection.%n%nYou must install OpenCode before starting this setup. OpenCode is not included in this package.%n%nSetup package version: {#SetupVersion}%n%nClose OpenCode and Altium Designer before continuing.
+turkish.WelcomeLabel2=Bu paket {#EdaName} için EDA Agent ve gerekli Python bileşenlerini internet bağlantısı gerektirmeden kuracaktır.%n%nBu kuruluma başlamadan önce OpenCode'u kurmanız gerekir. OpenCode bu pakete dahil değildir.%n%nKurulum paketi sürümü: {#SetupVersion}%n%nDevam etmeden önce OpenCode ve {#EdaName} uygulamalarını kapatın.
+english.WelcomeLabel2=This package will install EDA Agent for {#EdaName} and its Python runtime without an internet connection.%n%nYou must install OpenCode before starting this setup. OpenCode is not included in this package.%n%nSetup package version: {#SetupVersion}%n%nClose OpenCode and {#EdaName} before continuing.
 turkish.ReadyLabel2a=Kuruluma başlamak için Kur üzerine, ayarları gözden geçirmek için Önceki üzerine tıklayın.
 turkish.ReadyLabel2b=Kuruluma başlamak için Kur üzerine tıklayın.
 
 [CustomMessages]
 turkish.IntegrationGroup=OpenCode bağlantısı:
 english.IntegrationGroup=OpenCode integration:
-turkish.RegisterOpenCode=EDA Agent'ı OpenCode'a otomatik ekle (önerilir)
-english.RegisterOpenCode=Automatically add EDA Agent to OpenCode (recommended)
+turkish.RegisterOpenCode={#EdaName} bağlantısını OpenCode'a otomatik ekle (önerilir)
+english.RegisterOpenCode=Automatically add the {#EdaName} integration to OpenCode (recommended)
 turkish.Assistant=Altium bağlantı yardımcısını aç
 english.Assistant=Open the Altium connection assistant
 turkish.AssistantShortcut=Altium Bağlantı Yardımcısı
@@ -56,6 +67,8 @@ turkish.ConfigurationFailedHeading=Yapılandırma tamamlanamadı
 english.ConfigurationFailedHeading=Configuration was not completed
 turkish.InvalidConfig=OpenCode ayar dosyası okunamadı veya geçerli JSON/JSONC değil: %1. Dosyayı düzeltin veya otomatik OpenCode bağlantısı seçeneğini kapatın.
 english.InvalidConfig=The OpenCode configuration could not be read or is not valid JSON/JSONC: %1. Fix the file or disable automatic OpenCode integration.
+turkish.WrongDirectory=Seçilen dizinde başka bir EDA Agent paketi veya okunamayan kurulum bilgisi var. {#EdaName} paketi için farklı bir kurulum dizini seçin.
+english.WrongDirectory=The selected folder contains a different EDA Agent package or unreadable setup information. Choose a different installation folder for {#EdaName}.
 turkish.UnregisterFailed=OpenCode bağlantısı kaldırılamadı. Ayar dosyasını kontrol edip yeniden deneyin.
 english.UnregisterFailed=Could not remove the OpenCode integration. Check your configuration file and try again.
 #if Backend == "altium"
@@ -75,8 +88,11 @@ Source: "{#PayloadDir}\runtime\python313.*"; DestDir: "{tmp}\preflight\runtime";
 Source: "{#PayloadDir}\runtime\python3.dll"; DestDir: "{tmp}\preflight\runtime"; Flags: dontcopy noencryption
 Source: "{#PayloadDir}\runtime\vcruntime140*.dll"; DestDir: "{tmp}\preflight\runtime"; Flags: dontcopy noencryption
 Source: "{#PayloadDir}\configure_opencode.py"; DestDir: "{tmp}\preflight"; Flags: dontcopy noencryption
+Source: "installer\check_install_target.py"; DestDir: "{tmp}\preflight"; Flags: dontcopy noencryption
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+#if Backend == "altium"
 Source: "installer\Connection-Assistant.ps1"; DestDir: "{app}"; Flags: ignoreversion
+#endif
 Source: "installer\Unregister-Integration.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installer\Invoke-Setup.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -84,8 +100,8 @@ Source: "installer\Invoke-Setup.ps1"; DestDir: "{app}"; Flags: ignoreversion
 #if Backend == "altium"
 Name: "{group}\{cm:AssistantShortcut}"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File ""{app}\Connection-Assistant.ps1"" -Language {language}"; IconFilename: "{app}\runtime\python.exe"
 #endif
-Name: "{group}\EDA Agent - README"; Filename: "{app}\README.md"
-Name: "{group}\{cm:UninstallProgram,EDA Agent}"; Filename: "{uninstallexe}"
+Name: "{group}\{#ProductName} - README"; Filename: "{app}\README.md"
+Name: "{group}\{cm:UninstallProgram,{#ProductName}}"; Filename: "{uninstallexe}"
 
 [Run]
 #if Backend == "altium"
@@ -105,6 +121,7 @@ Type: dirifempty; Name: "{app}\scripts"
 var
   CopyrightLabel: TNewStaticText;
   ConfigurationFailed: Boolean;
+  PreflightReady: Boolean;
 
 function ConfigurationSucceeded: Boolean;
 begin
@@ -147,9 +164,9 @@ function OpenCodeConfigPath: String;
 begin
   Result := ExpandConstant('{param:OPENCODECONFIG|}');
   if Result = '' then begin
-    Result := ExpandConstant('{userprofile}\.config\opencode\opencode.jsonc');
-    if (not FileExists(Result)) and FileExists(ExpandConstant('{userprofile}\.config\opencode\opencode.json')) then
-      Result := ExpandConstant('{userprofile}\.config\opencode\opencode.json');
+    Result := ExpandConstant('{%USERPROFILE}\.config\opencode\opencode.jsonc');
+    if (not FileExists(Result)) and FileExists(ExpandConstant('{%USERPROFILE}\.config\opencode\opencode.json')) then
+      Result := ExpandConstant('{%USERPROFILE}\.config\opencode\opencode.json');
   end;
 end;
 
@@ -159,9 +176,21 @@ var
   ResultCode: Integer;
 begin
   Result := '';
+  if not PreflightReady then begin
+    ExtractTemporaryFiles('{tmp}\preflight\*');
+    PreflightReady := True;
+  end;
+  Parameters := '"' + ExpandConstant('{tmp}') + '\preflight\check_install_target.py" "' + ExpandConstant('{app}') + '" {#Backend}';
+  if not Exec(ExpandConstant('{tmp}\preflight\runtime\python.exe'), Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then begin
+    Result := CustomMessage('WrongDirectory');
+    Exit;
+  end;
+  if ResultCode <> 0 then begin
+    Result := CustomMessage('WrongDirectory');
+    Exit;
+  end;
   if WizardIsTaskSelected('opencode') then begin
     ConfigPath := OpenCodeConfigPath;
-    ExtractTemporaryFiles('{tmp}\preflight\*');
     Parameters := '"' + ExpandConstant('{tmp}') + '\preflight\configure_opencode.py" "' + ConfigPath + '" --check';
     if not Exec(ExpandConstant('{tmp}\preflight\runtime\python.exe'), Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
       Result := FmtMessage(CustomMessage('InvalidConfig'), [ConfigPath])

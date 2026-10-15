@@ -9,6 +9,7 @@ import threading
 import time
 
 launcher = Path(sys.argv[1])
+backend = json.loads((launcher.parent / "installation.json").read_text(encoding="utf-8"))["backend"]
 errors = launcher.parent / "probe-stderr.log"
 network_log = launcher.parent / "probe-network.log"
 network_log.unlink(missing_ok=True)
@@ -56,8 +57,13 @@ with errors.open("w", encoding="utf-8") as stderr:
         send({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
         tools = receive(2)["tools"]
         assert tools, "Server advertised no tools"
+        names = {tool["name"] for tool in tools}
+        if backend == "kicad":
+            assert "kicad_ping" in names, "KiCad tools are missing"
+        else:
+            assert "kicad_ping" not in names, "Altium package advertised KiCad tools"
         assert not network_log.exists(), f"External network attempted; see {network_log}"
-        print(f"MCP initialize and tools/list OK: {len(tools)} tools, {time.monotonic() - started:.2f}s, external network blocked")
+        print(f"MCP {backend}: initialize and tools/list OK: {len(tools)} tools, {time.monotonic() - started:.2f}s, external network blocked")
     finally:
         process.terminate()
         try:

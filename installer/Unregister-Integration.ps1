@@ -9,6 +9,11 @@ if (Test-Path -LiteralPath $stateFile) {
         if ($LASTEXITCODE -ne 0) { throw 'Could not remove the OpenCode integration. Existing configuration was preserved.' }
     }
 }
+$settingsFile = Join-Path $InstallDir 'installation.json'
+if (Test-Path -LiteralPath $settingsFile) {
+    $settings = Get-Content -LiteralPath $settingsFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($settings.backend -eq 'kicad') { return }
+}
 $pointer = if ($env:EDA_AGENT_POINTER_FILE) { $env:EDA_AGENT_POINTER_FILE } else { 'C:\ProgramData\eda-agent\workspace-path.txt' }
 if (Test-Path -LiteralPath $pointer -PathType Leaf) {
     $workspace = [IO.File]::ReadAllText($pointer, [Text.Encoding]::Default).TrimEnd('\')

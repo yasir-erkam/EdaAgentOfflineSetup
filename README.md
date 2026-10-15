@@ -10,20 +10,38 @@ Windows 10/11 x64 ve kurulu/lisanslı EDA uygulaması gerekir.
 **Ön koşul:** Bu kuruluma başlamadan önce OpenCode'u kurun. OpenCode bu pakete
 dahil değildir; ayrı kurulmalıdır.
 
-`EdaAgentOfflineSetup-0.1.0-altium.exe` dosyasını hedef bilgisayara taşıyıp çift
+Kullandığınız EDA uygulamasına uygun ayrı paketi seçin:
+
+| EDA uygulaması | Kurulum dosyası | OpenCode MCP adı |
+| --- | --- | --- |
+| Altium Designer | `EdaAgentOfflineSetup-0.1.1-altium.exe` | `eda-agent` |
+| KiCad 9+ | `EdaAgentOfflineSetup-0.1.1-kicad.exe` | `eda-agent-kicad` |
+
+Paketler ayrı uygulama kayıtları ve dizinler kullanır; birlikte kurulabilir.
+Birini kaldırmak diğerinin OpenCode bağlantısını veya çalışma dosyalarını silmez.
+Altium ve KiCad uygulamaları bu paketlere dahil değildir.
+
+Seçtiğiniz EXE dosyasını hedef bilgisayara taşıyıp çift
 tıklayın. Türkçe veya İngilizce sihirbazdan kurulum dizinini seçin. Önerilen
 **EDA Agent'ı OpenCode'a otomatik ekle** seçeneğini açık bırakın. Python veya
 PowerShell komutu çalıştırmanız gerekmez; tüm bağımlılıklar EXE içindedir.
 
-Kurulum sonunda **Altium bağlantı yardımcısını aç** seçeneğini kullanın. Altium'u
+**Altium paketi:** Kurulum sonunda **Altium bağlantı yardımcısını aç** seçeneğini kullanın. Altium'u
 açıp projenizi yükledikten sonra **Altium'a bağlan** düğmesine basın. Yardımcı,
 upstream `relaunch` komutuyla çalışan Altium oturumuna scripti başlatma isteği
 gönderir. OpenCode'u yeniden başlatın. Yardımcıya daha sonra Başlat menüsündeki
-**EDA Agent > Altium Bağlantı Yardımcısı** kısayolundan ulaşabilirsiniz.
+**EDA Agent for Altium > Altium Bağlantı Yardımcısı** kısayolundan ulaşabilirsiniz.
 
 Altium sürümünüz doğrudan başlatmayı desteklemiyorsa yardımcıdaki elle tanıtma
 adımlarını izleyin; script yolu kopyalanabilir ve klasörü tek düğmeyle açılabilir.
 Gerçek Altium bağlantısı hedef bilgisayarda doğrulanmalıdır.
+
+**KiCad paketi:** KiCad 9+ içinde **Preferences > Plugins > KiCad API server**
+seçeneğini açın ve PCB Editor'da bir kart yükleyin. OpenCode'u yeniden başlatın;
+`eda-agent-kicad` bağlantısını kullanın. Altium scripti veya bağlantı yardımcısı
+gerekmez. KiCad paketi Altium'un makine genelindeki işaretçisini değiştirmez;
+ortak 8766 portunu kullanmamak için web panosu varsayılan olarak kapalıdır.
+Gerçek KiCad bağlantısı hedef bilgisayarda doğrulanmalıdır.
 
 Windows'un uygulama kaldırma ekranı yalnız bu kurulumun OpenCode kaydını ve
 Altium işaretçisini temizler. Diğer MCP'ler, sağlayıcı/API anahtarı ayarları,
@@ -37,11 +55,13 @@ desteklenir; önce OpenCode ve Altium'u kapatın.
 derleyicisiyle çalıştırın:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1 -Backend altium
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1 -Backend kicad
 ```
 
-En yeni hazırlanmış paket varsayılan olarak seçilir. `-BundlePath`,
-`-SetupVersion 0.1.0` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
+Seçilen backend için en yeni hazırlanmış paket seçilir; varsayılan backend
+`altium`'dur. `-BundlePath`,
+`-SetupVersion 0.1.1` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
 özelleştirilebilir. Kaynak scriptler değiştiyse eski paket reddedilir; yeniden
 hazırlayın. EXE ve `.sha256` dosyası `dist` altında üretilir. Derleme sürümü
 upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme yapmaz.
@@ -56,7 +76,13 @@ Windows PowerShell 5.1 veya üzeriyle bu klasörde çalıştırın:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-OfflineBundle.ps1
 ```
 
-Varsayılan backend Altium'dur. KiCad için `-Backend kicad` ekleyin.
+Varsayılan backend Altium'dur. Her iki ayrı paketi hazırlamak için:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-OfflineBundle.ps1 -Backend altium
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-OfflineBundle.ps1 -Backend kicad
+```
+
 Python 3.13.16 embeddable sürümü resmi Python sitesinden; kaynak kod GitHub'dan,
 bağımlılıklar PyPI'dan indirilir. İnternetli bilgisayarda da Python gerekmez.
 Yerel kaynak wheel'i oluşturulur; üçüncü taraf bağımlılıklarda yalnız hazır
@@ -87,12 +113,16 @@ oluşturur. OpenCode'a otomatik kaydetmek için yukarıdaki komutu veya
 `Install.cmd -ConfigureOpenCode` kullanın. Önce OpenCodeSetup'ı, ardından EDA
 Agent'ı kurun; OpenCodeSetup yapılandırma şablonunu yeniden kopyalayabilir.
 
-Varsayılan dizin `%LOCALAPPDATA%\EdaAgent` olur. `-InstallDir 'D:\Tools\EdaAgent'`
+Elle kurulumda varsayılan dizin Altium için `%LOCALAPPDATA%\EdaAgent`, KiCad için
+`%LOCALAPPDATA%\EdaAgentKiCad` olur. EXE sihirbazı bunları sırasıyla
+`%LOCALAPPDATA%\Programs\EdaAgent` ve `%LOCALAPPDATA%\Programs\EdaAgentKiCad`
+altına kurar. `-InstallDir 'D:\Tools\EdaAgent'`
 ile değiştirilebilir. Var olan kurulum dizini üzerine yazılmaz; güncellemede yeni
 bir dizin seçin. Kurulum indirme veya paket çözümleme yapmaz, sistem PATH'ini değiştirmez.
 
 `-ConfigureOpenCode` mevcut `%USERPROFILE%\.config\opencode\opencode.jsonc`
-(yoksa mevcut `opencode.json`) dosyasına yalnız `mcp.eda-agent` bağlantısını ekler.
+(yoksa mevcut `opencode.json`) dosyasına pakete göre yalnız `mcp.eda-agent` veya
+`mcp.eda-agent-kicad` bağlantısını ekler.
 API anahtarları ve diğer ayarlar korunur; dosyanın tarihli `.bak` yedeği alınır.
 JSONC yorumları/biçimi JSON olarak yeniden yazılır. Geçersiz ayarlar değiştirilmez.
 Geçersiz ayarlar dosya kopyalamadan önce reddedilir. Sonraki bir adım başarısız

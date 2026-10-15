@@ -98,8 +98,10 @@ def write_config(target, data):
 
 def configure(target, snippet):
     data = load_config(target)
-    entry = json.loads(snippet.read_text(encoding="utf-8"))["mcp"]["eda-agent"]
-    data["mcp"]["eda-agent"] = entry
+    entries = json.loads(snippet.read_text(encoding="utf-8"))["mcp"]
+    if len(entries) != 1 or next(iter(entries)) not in {"eda-agent", "eda-agent-kicad"}:
+        raise ValueError("Expected one EDA Agent MCP entry")
+    data["mcp"].update(entries)
     write_config(target, data)
 
 
@@ -107,11 +109,14 @@ def remove_owned(target, snippet):
     if not target.exists():
         return
     data = load_config(target)
-    entry = data["mcp"].get("eda-agent")
-    expected = json.loads(snippet.read_text(encoding="utf-8"))["mcp"]["eda-agent"]
+    entries = json.loads(snippet.read_text(encoding="utf-8"))["mcp"]
+    if len(entries) != 1 or next(iter(entries)) not in {"eda-agent", "eda-agent-kicad"}:
+        raise ValueError("Expected one EDA Agent MCP entry")
+    name, expected = next(iter(entries.items()))
+    entry = data["mcp"].get(name)
     if not isinstance(entry, dict) or entry.get("command") != expected["command"]:
         return
-    del data["mcp"]["eda-agent"]
+    del data["mcp"][name]
     if not data["mcp"]:
         del data["mcp"]
     write_config(target, data)

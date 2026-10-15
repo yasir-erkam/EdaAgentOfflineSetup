@@ -1,13 +1,14 @@
 [CmdletBinding()]
 param(
     [string]$BundlePath,
-    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.0',
+    [ValidateSet('altium', 'kicad')][string]$Backend = 'altium',
+    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.1',
     [string]$IsccPath
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 if (-not $BundlePath) {
-    $candidates = @(Get-ChildItem (Join-Path $PSScriptRoot 'dist') -Directory -Filter 'EdaAgent-*' |
+    $candidates = @(Get-ChildItem (Join-Path $PSScriptRoot 'dist') -Directory -Filter "EdaAgent-$Backend-*" |
         Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'checksums.json') } | Sort-Object LastWriteTime -Descending)
     if ($candidates.Count -eq 0) { throw 'No prepared bundle. Run Build-OfflineBundle.ps1 first.' }
     $BundlePath = $candidates[0].FullName
@@ -42,7 +43,8 @@ if (-not $IsccPath) {
 if (-not $IsccPath) { throw 'Inno Setup 6 compiler not found. Supply -IsccPath.' }
 $metadata = Get-Content -LiteralPath "$BundlePath\bundle.json" -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($metadata.backend -notin @('altium', 'kicad')) { throw 'Unsupported backend.' }
-$generated = Join-Path $PSScriptRoot 'dist\installer-uninstall-files.iss'
+if ($PSBoundParameters.ContainsKey('Backend') -and $metadata.backend -ne $Backend) { throw 'BundlePath does not match the requested backend.' }
+$generated = Join-Path $PSScriptRoot "dist\installer-uninstall-files-$($metadata.backend).iss"
 $lines = @(Get-ChildItem "$BundlePath\runtime\Lib\site-packages\eda_agent\scripts" -File | Where-Object Extension -in @('.pas', '.dfm', '.PrjScr') | ForEach-Object {
     'Type: files; Name: "{app}\scripts\' + $_.Name + '"'
 })
