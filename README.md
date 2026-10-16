@@ -14,8 +14,8 @@ Kullandığınız EDA uygulamasına uygun ayrı paketi seçin:
 
 | EDA uygulaması | Kurulum dosyası | OpenCode MCP adı |
 | --- | --- | --- |
-| Altium Designer | `EdaAgentOfflineSetup-0.1.3-altium.exe` | `eda-agent` |
-| KiCad 9+ | `EdaAgentOfflineSetup-0.1.3-kicad.exe` | `eda-agent-kicad` |
+| Altium Designer | `EdaAgentOfflineSetup-0.1.5-altium.exe` | `eda-agent` |
+| KiCad 9+ | `EdaAgentOfflineSetup-0.1.5-kicad.exe` | `eda-agent-kicad` |
 
 Paketler ayrı uygulama kayıtları ve dizinler kullanır; birlikte kurulabilir.
 Birini kaldırmak diğerinin OpenCode bağlantısını veya çalışma dosyalarını silmez.
@@ -35,6 +35,11 @@ gönderir. OpenCode'u yeniden başlatın. Yardımcıya daha sonra Başlat menüs
 Altium sürümünüz doğrudan başlatmayı desteklemiyorsa yardımcıdaki elle tanıtma
 adımlarını izleyin; script yolu kopyalanabilir ve klasörü tek düğmeyle açılabilir.
 Gerçek Altium bağlantısı hedef bilgisayarda doğrulanmalıdır.
+
+0.1.5 sürümü Altium içine EDA Agent menüsü eklemez. Menü ve proje hedefleme çalışması
+[uygulama planında](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.5/docs/altium-menu-integration-plan.md) belgelenmiştir; canlı prototip
+doğrulaması beklemektedir. Mevcut yardımcıdaki **Bağlantıyı denetle** düğmesi upstream
+`doctor` çalıştırır ve açık belgeleri kaydedebilir.
 
 **KiCad paketi:** KiCad 9+ içinde **Preferences > Plugins > KiCad API server**
 seçeneğini açın ve PCB Editor'da bir kart yükleyin. OpenCode'u yeniden başlatın;
@@ -61,7 +66,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1 -Backe
 
 Seçilen backend için en yeni hazırlanmış paket seçilir; varsayılan backend
 `altium`'dur. `-BundlePath`,
-`-SetupVersion 0.1.3` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
+`-SetupVersion 0.1.5` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
 özelleştirilebilir. Kaynak scriptler değiştiyse eski paket reddedilir; yeniden
 hazırlayın. EXE ve `.sha256` dosyası `dist` altında üretilir. Derleme sürümü
 upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme yapmaz.
@@ -84,15 +89,15 @@ sürümler değiştirilmez.
 İlk yayın için bu otomasyonu içeren commit'ten sonra Eda deposunda etiket oluşturup gönderin:
 
 ```powershell
-git tag -a v0.1.3 -m "Release EDA installers 0.1.3"
-git push --atomic origin main refs/tags/v0.1.3
+git tag -a v0.1.5 -m "Release EDA installers 0.1.5"
+git push --atomic origin main refs/tags/v0.1.5
 ```
 
 Sonraki yayınlarda paket sürümlerini ve CHANGELOG'u güncelleyin, commit ve yeni
 etiket oluşturun. GitHub'da **Actions → Release EDA installers → Run workflow**
 üzerinden mevcut bir etiketi girerek de çalıştırabilirsiniz. Seçilen etiketin
 otomasyon dosyalarını içermesi gerekir. OpenCode deposunun `v1.1.3` etiketi Eda
-deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.3`'dir.
+deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.5`'dir.
 
 `release-source.json` upstream EDA Agent commit'ini ve Python sürümünü sabitler;
 iki backend aynı kaynakla derlenir. Python bağımlılıkları her hazırlamada yeniden
@@ -202,7 +207,9 @@ EasyEDA Pro bu pakette desteklenmez.
 & "$env:LOCALAPPDATA\EdaAgent\Start-EdaAgent.cmd" doctor
 ```
 
-`doctor` Altium açık ve köprü çalışıyorken kullanılır. MCP sunucusu stdio üzerinden
+`doctor` Altium açık ve köprü çalışıyorken kullanılır; denetimin parçası olarak
+`application.save_all` çağırır ve açık belgeleri kaydedebilir. Upstream
+`application.stop_server` da değişmiş belgeleri kaydedebilir. MCP sunucusu stdio üzerinden
 istemci tarafından başlatılır; Windows servisi değildir. AI model erişimi ayrıdır:
 internetsiz ortamda yerel veya kurum içi erişilebilir model sunucusu gerekir.
 İnternet isteyen parça arama/datasheet indirme işlemleri çevrimdışı çalışmaz.
@@ -217,6 +224,11 @@ hatası anlamına gelmez. Gerçek tasarım üzerinde çalışmadan önce `doctor
 ve açık Altium oturumunu ayrıca kontrol edin.
 
 ## Geliştirme ve doğrulama
+
+`python tests/test_altium_connection_probe.py` ping probunu geçici workspace ve taklit
+yanıtlarla sınar; Altium gerektirmez. Gerçek test ortamındaki yalnız ping kontrolü ve
+menü prototipi adımları [doğrulama listesinde](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.5/docs/altium-menu-prototype-checklist.md)
+bulunur. Bu depo aracı kurulum paketine dahil değildir.
 
 `tests\Test-OfflineBundle.ps1 -BundlePath '...\dist\EdaAgent-...'` geçici dizinde
 kurulum, ayar birleştirme, hata durumunda geri alma, CMD başlatıcı ve bozuk paket

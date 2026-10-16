@@ -1,5 +1,13 @@
 # Sürüm Notları
 
+## 0.1.5
+
+- Altium menü entegrasyonu için kapsam, beş menü işlemi, çoklu proje/oturum kuralları ve kurulum/kaldırma kabul ölçütleri belgelendi. Menü entegrasyonu henüz uygulanmadı ve bu EXE'ler Altium'a yeni menü eklemez.
+- Depodaki `tests/probe_altium_connection.py`, mevcut workspace'e yalnız IPC-v2 ping göndererek belge kaydetmeden kanal yanıtını kontrol eder. Oturum/proje kimliğini veya OpenCode bağlantısını doğrulamaz; kurulum paketine dahil değildir.
+- Ping probunun geçici workspace üzerinde çalışan dört regresyon testi yayın akışına eklendi; canlı Altium prototipi için doğrulama listesi hazırlandı. Gerçek Altium denemesi ertelendi.
+- Mevcut upstream `doctor` ve `application.stop_server` komutlarının belge kaydedebildiği belgelendi. Bağlantı yardımcısının mevcut davranışı bu sürümde değiştirilmedi.
+- README'deki kurulum dosyası adları ve sürüm örnekleri güncellendi. Sabitlenmiş upstream ve Python sürümü değişmedi.
+
 ## 0.1.4
 
 - Altium ve KiCad paketleri varsayılan olarak `minimal` MCP araç modunda başlar; yüzlerce araç şeması model bağlamına başlangıçta yüklenmez.

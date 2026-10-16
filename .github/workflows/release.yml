@@ -78,6 +78,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $altium = (Get-ChildItem dist -Directory -Filter EdaAgent-altium-*).FullName
+          & "$altium\runtime\python.exe" -c "import runpy, sys; sys.path.insert(0, 'tests'); runpy.run_path('tests/test_altium_connection_probe.py', run_name='__main__')"
+          if ($LASTEXITCODE -ne 0) { throw 'Altium ping probe regression checks failed.' }
           ./tests/Test-OfflineBundle.ps1 -BundlePath $altium
           ./tests/Test-SetupWizard.ps1 -InstallerPath "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe"
           ./tests/Test-SeparatePackages.ps1 -AltiumInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe" -KiCadInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-kicad.exe"
