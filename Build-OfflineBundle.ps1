@@ -51,10 +51,24 @@ Invoke-Python -Arguments @('-m', 'pip', 'check')
 Invoke-Python -Arguments @('-c', 'import eda_agent.server, win32api, pythoncom, comtypes, numpy, scipy, matplotlib, flask')
 if ($Backend -eq 'kicad') { Invoke-Python -Arguments @('-c', 'import kipy') }
 Write-Host 'Runtime imports OK'
-Copy-Item "$PSScriptRoot\payload\*" $bundle -Exclude 'sitecustomize.py'
+foreach ($name in @('launch.py', 'configure_opencode.py', 'Start-EdaAgent.cmd')) {
+    Copy-Item (Join-Path $PSScriptRoot "payload\$name") $bundle
+}
+if ($Backend -eq 'altium') {
+    Invoke-Python -Arguments @((Join-Path $PSScriptRoot 'installer\apply_altium_menu.py'),
+        "$runtime\Lib\site-packages\eda_agent\scripts", '--source-commit', $SourceCommit)
+    Copy-Item "$PSScriptRoot\payload\altium\altium_menu.py" $bundle
+    $menuDocs = New-Item -ItemType Directory -Path "$bundle\docs" -Force
+    foreach ($name in @('altium-menu-usage.md', 'altium-menu-integration-plan.md', 'altium-menu-prototype-checklist.md')) {
+        Copy-Item (Join-Path $PSScriptRoot "docs\$name") $menuDocs.FullName
+    }
+}
 Copy-Item "$PSScriptRoot\Install-Offline.ps1", "$PSScriptRoot\Install.cmd", "$PSScriptRoot\README.md", "$PSScriptRoot\LICENSE" $bundle
 $notices = New-Item -ItemType Directory -Path "$bundle\upstream" -Force
 Copy-Item "$source\LICENSE", "$source\NOTICE", "$source\README.md" $notices.FullName
+if ($Backend -eq 'altium') {
+    Copy-Item "$runtime\Lib\site-packages\eda_agent\scripts\offline-menu-patch.json" "$bundle\upstream\ALTIUM-MENU-PATCH.json"
+}
 $manifest = [ordered]@{
     schemaVersion = 1; backend = $Backend; sourceCommit = $SourceCommit
     sourceUrl = 'https://github.com/salitronic/eda-agent'; pythonVersion = $PythonVersion

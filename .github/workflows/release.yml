@@ -78,9 +78,17 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $altium = (Get-ChildItem dist -Directory -Filter EdaAgent-altium-*).FullName
+          $config = Get-Content release-source.json -Raw | ConvertFrom-Json
+          $sourceWork = (Get-ChildItem .work -Directory -Filter altium-*).FullName
+          $env:EDA_MENU_UPSTREAM_SCRIPTS = Join-Path $sourceWork "source\eda-agent-$($config.sourceCommit)\scripts\altium"
+          & "$altium\runtime\python.exe" tests/test_altium_menu.py
+          if ($LASTEXITCODE -ne 0) { throw 'Altium menu regression checks failed.' }
+          & "$altium\runtime\python.exe" tests/test_altium_menu_runtime.py
+          if ($LASTEXITCODE -ne 0) { throw 'Altium menu FastMCP checks failed.' }
           & "$altium\runtime\python.exe" -c "import runpy, sys; sys.path.insert(0, 'tests'); runpy.run_path('tests/test_altium_connection_probe.py', run_name='__main__')"
           if ($LASTEXITCODE -ne 0) { throw 'Altium ping probe regression checks failed.' }
           ./tests/Test-OfflineBundle.ps1 -BundlePath $altium
+          ./tests/Test-AltiumMenuSetup.ps1 -BundlePath $altium
           ./tests/Test-SetupWizard.ps1 -InstallerPath "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe"
           ./tests/Test-SeparatePackages.ps1 -AltiumInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe" -KiCadInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-kicad.exe"
 

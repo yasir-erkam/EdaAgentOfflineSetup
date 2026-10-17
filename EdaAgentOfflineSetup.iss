@@ -51,6 +51,8 @@ turkish.ReadyLabel2a=Kuruluma başlamak için Kur üzerine, ayarları gözden ge
 turkish.ReadyLabel2b=Kuruluma başlamak için Kur üzerine tıklayın.
 
 [CustomMessages]
+turkish.AltiumMenu=Altium menü komutunu hazırla (elle eklenir; korumalı mod, sınırlı araç desteği)
+english.AltiumMenu=Prepare the Altium menu command (manual registration; guarded mode, limited tool support)
 turkish.IntegrationGroup=OpenCode bağlantısı:
 english.IntegrationGroup=OpenCode integration:
 turkish.RegisterOpenCode={#EdaName} bağlantısını OpenCode'a otomatik ekle (önerilir)
@@ -81,6 +83,9 @@ english.FinishedLabel=EDA Agent is installed. In KiCad 9 or later, enable Prefer
 
 [Tasks]
 Name: "opencode"; Description: "{cm:RegisterOpenCode}"; GroupDescription: "{cm:IntegrationGroup}"
+#if Backend == "altium"
+Name: "altiummenu"; Description: "{cm:AltiumMenu}"; Flags: unchecked
+#endif
 
 [Files]
 Source: "{#PayloadDir}\runtime\python.exe"; DestDir: "{tmp}\preflight\runtime"; Flags: dontcopy noencryption
@@ -114,6 +119,12 @@ Type: files; Name: "{app}\installation.json"
 Type: files; Name: "{app}\setup-state.json"
 Type: files; Name: "{app}\opencode.mcp.json"
 Type: files; Name: "{app}\setup-configuration.log"
+#if Backend == "altium"
+Type: files; Name: "{app}\Altium-Menu-Commands.txt"
+Type: files; Name: "{app}\workspace\eda-menu-enabled"
+Type: files; Name: "{app}\workspace\eda-menu-state.json"
+Type: dirifempty; Name: "{app}\workspace\eda-menu-session.lock"
+#endif
 #include GeneratedFiles
 Type: dirifempty; Name: "{app}\scripts"
 
@@ -208,6 +219,10 @@ begin
     WizardForm.StatusLabel.Caption := CustomMessage('Configuring');
     LogFile := ExpandConstant('{app}\setup-configuration.log');
     Parameters := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\Invoke-Setup.ps1') + '"';
+#if Backend == "altium"
+    if WizardIsTaskSelected('altiummenu') then
+      Parameters := Parameters + ' -EnableAltiumMenu';
+#endif
     if WizardIsTaskSelected('opencode') then begin
       Parameters := Parameters + ' -ConfigureOpenCode';
       ConfigPath := OpenCodeConfigPath;

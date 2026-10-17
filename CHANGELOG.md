@@ -1,5 +1,13 @@
 # Sürüm Notları
 
+## Unreleased
+
+- Altium için isteğe bağlı menü komutu hazırlığı ve beş işlemli TR/EN kontrol penceresi eklendi. Altium Customize kaydı elle yapılır; profil dosyaları otomatik değiştirilmez. Canlı Altium doğrulaması bekliyor.
+- Yeni bağlantı yardımcısı asenkron çalışır; durum kontrolü doctor kullanmaz. Korumalı modda hedef proje seçimi, eski isteklerin geçersiz kılınması ve kaydetmeyen bağlantı kesme yolu eklendi.
+- İlk korumalı kapsam yalnız pcb_get_components, pcb_get_nets ve pcb_move_components araçlarını içerir. Diğer tasarım araçları Python ve Pascal katmanlarında engellenir; mevcut tüm araçlarla uyumluluk iddiası yoktur.
+- Sabitlenmiş Altium kaynaklarına hash kontrollü yerel overlay, kaynak değişiklik bildirimi ve patch manifesti eklenir. Yeniden kurulum menü sahipliğini ve tanımadığı durum alanlarını korur. KiCad yerel Altium adaptörünü içermez.
+- Türkçe kurulum yollarının ANSI çıktı/işaretçi kodlamasında kaybolması giderildi: başlatıcı UTF-8 çıktı üretir; ANSI ile temsil edilemeyen Altium workspace yolları BOM'lu UTF-8 ve uyumlu Pascal okuyucuyla aktarılır.
+
 ## 0.1.5
 
 - Altium menü entegrasyonu için kapsam, beş menü işlemi, çoklu proje/oturum kuralları ve kurulum/kaldırma kabul ölçütleri belgelendi. Menü entegrasyonu henüz uygulanmadı ve bu EXE'ler Altium'a yeni menü eklemez.

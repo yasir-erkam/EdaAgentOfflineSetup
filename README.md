@@ -41,6 +41,13 @@ Gerçek Altium bağlantısı hedef bilgisayarda doğrulanmalıdır.
 doğrulaması beklemektedir. Mevcut yardımcıdaki **Bağlantıyı denetle** düğmesi upstream
 `doctor` çalıştırır ve açık belgeleri kaydedebilir.
 
+**Kaynak koddaki yeni uygulama:** Yeni derlemelerde isteğe bağlı **Altium menü komutunu
+hazırla** seçeneği, beş işlemli kontrol penceresini Altium'a elle eklemek için komut
+dosyası üretir. Korumalı mod şu anda yalnız üç PCB aracını destekler; diğer tasarım
+komutlarını engeller. Yeni bağlantı yardımcısı durum kontrolünde belge kaydetmez.
+Canlı Altium doğrulaması bekliyor. [Kullanım ve kapsam](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/main/docs/altium-menu-usage.md).
+Altium paketinde bu belge `docs\altium-menu-usage.md` olarak çevrimdışı da bulunur.
+
 **KiCad paketi:** KiCad 9+ içinde **Preferences > Plugins > KiCad API server**
 seçeneğini açın ve PCB Editor'da bir kart yükleyin. OpenCode'u yeniden başlatın;
 `eda-agent-kicad` bağlantısını kullanın. Altium scripti veya bağlantı yardımcısı

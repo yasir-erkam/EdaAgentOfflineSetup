@@ -1,7 +1,16 @@
 param([Parameter(Mandatory = $true)][string]$InstallDir)
 $ErrorActionPreference = 'Stop'
 $InstallDir = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\')
+$settingsPath = Join-Path $InstallDir 'installation.json'
+$isKicad = $false
+if (Test-Path -LiteralPath $settingsPath) {
+    $isKicad = (Get-Content -LiteralPath $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json).backend -eq 'kicad'
+}
 $stateFile = Join-Path $InstallDir 'setup-state.json'
+if (-not $isKicad -and (Test-Path -LiteralPath (Join-Path $InstallDir 'workspace\eda-menu-enabled')) -and
+    (Get-Process -Name X2,DXP -ErrorAction SilentlyContinue)) {
+    throw 'Close all Altium sessions before removing guarded menu support. Remove the manual EDA Agent command in Customize as well.'
+}
 if (Test-Path -LiteralPath $stateFile) {
     $state = Get-Content -LiteralPath $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($state.configPath) {

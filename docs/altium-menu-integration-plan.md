@@ -1,11 +1,13 @@
 # Altium içinde EDA Agent menüsü — uygulama planı
 
-Durum: Teknik belge/kaynak incelemesi yapıldı; gerçek Altium prototipi ve uygulama bekliyor.
+Durum: İsteğe bağlı menü kontrol penceresi, yerel adaptör ve kurulum hazırlığı uygulandı;
+canlı Altium doğrulaması bekliyor. Korumalı mod başlangıçta üç PCB aracıyla sınırlı.
 Tarih: 16 Ekim 2026; depo kodu incelemesi sonrası güncellendi.
 
 Canlı deneme kullanıcı isteğiyle ertelendi. Yerel IPC ping probu ve disposable ortamda
 uygulanacak adımlar [prototip doğrulama listesinde](altium-menu-prototype-checklist.md)
-hazırlandı. Geçici workspace ile test edilen probe ürün entegrasyonu veya canlı
+hazırlandı. Uygulamanın kapsam sınırları [menü kullanım belgesinde](altium-menu-usage.md).
+Geçici workspace ile test edilen probe ürün entegrasyonu veya canlı
 Altium doğrulaması yerine geçmez.
 
 ## Amaç ve dağıtım kararı
@@ -126,8 +128,9 @@ ve iptal davranışı prototip sonucunda belirlenip uygulama öncesinde belgelen
 
 ## Aşama 1 — Teknik yapılabilirliği doğrula
 
-Bu aşama uygulamanın ön koşuludur. Henüz doğrulanmamış menü API'si, kayıt anahtarı
-veya sürüm uyumluluğu varsayarak kurulum kodu yazılmamalıdır.
+Bu aşama desteklenen sürüm/çalışan ürün iddiasının ön koşuludur. Kullanıcının uygulama
+talebiyle canlı test beklerken geliştirme yapıldı; otomatik profil kaydı uygulanmadı.
+Henüz doğrulanmamış menü API'si, kayıt anahtarı veya sürüm uyumluluğu varsayılmamalıdır.
 
 - Hedefte kullanılan Altium sürümlerini ve profil düzenini kaydet.
 - Resmi Altium belgelerinden script fonksiyonuna menü/araç çubuğu komutu bağlama,

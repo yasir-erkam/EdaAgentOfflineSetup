@@ -43,6 +43,14 @@ if (-not $IsccPath) {
 if (-not $IsccPath) { throw 'Inno Setup 6 compiler not found. Supply -IsccPath.' }
 $metadata = Get-Content -LiteralPath "$BundlePath\bundle.json" -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($metadata.backend -notin @('altium', 'kicad')) { throw 'Unsupported backend.' }
+if ($metadata.backend -eq 'altium') {
+    if ((Get-FileHash (Join-Path $PSScriptRoot 'payload\altium\altium_menu.py')).Hash -ne (Get-FileHash (Join-Path $BundlePath 'altium_menu.py')).Hash) { throw 'Stale Altium menu controller. Prepare a new bundle.' }
+    & "$BundlePath\runtime\python.exe" (Join-Path $PSScriptRoot 'installer\apply_altium_menu.py') "$BundlePath\runtime\Lib\site-packages\eda_agent\scripts" --verify
+    if ($LASTEXITCODE -ne 0) { throw 'Altium menu patch is stale or modified. Prepare a new bundle.' }
+    foreach ($name in @('altium-menu-usage.md', 'altium-menu-integration-plan.md', 'altium-menu-prototype-checklist.md')) {
+        if ((Get-FileHash (Join-Path $PSScriptRoot "docs\$name")).Hash -ne (Get-FileHash (Join-Path $BundlePath "docs\$name")).Hash) { throw "Stale bundle: $name. Prepare a new bundle." }
+    }
+}
 if ($PSBoundParameters.ContainsKey('Backend') -and $metadata.backend -ne $Backend) { throw 'BundlePath does not match the requested backend.' }
 $generated = Join-Path $PSScriptRoot "dist\installer-uninstall-files-$($metadata.backend).iss"
 $lines = @(Get-ChildItem "$BundlePath\runtime\Lib\site-packages\eda_agent\scripts" -File | Where-Object Extension -in @('.pas', '.dfm', '.PrjScr') | ForEach-Object {
