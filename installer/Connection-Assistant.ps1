@@ -7,10 +7,11 @@ Add-Type -AssemblyName System.Drawing
 $tr = $Language -eq 'turkish'
 function Text-For([string]$Turkish, [string]$English) { if ($tr) { $Turkish } else { $English } }
 $root = $PSScriptRoot
+. (Join-Path $root 'setup_logging.ps1')
 $script:pending = $null
 $form = New-Object Windows.Forms.Form
 $form.Text = Text-For 'EDA Agent - Bağlantı Yardımcısı' 'EDA Agent - Connection Assistant'
-$form.ClientSize = New-Object Drawing.Size(900, 640)
+$form.ClientSize = New-Object Drawing.Size(900, 690)
 $form.MinimumSize = $form.Size
 $form.StartPosition = 'CenterScreen'
 $form.Font = New-Object Drawing.Font('Segoe UI', 10)
@@ -54,6 +55,26 @@ $footer = New-Object Windows.Forms.Label
 $footer.SetBounds(250, 592, 630, 28)
 $footer.Text = '© 2026 Yasir Erkam ÖZDEMİR'
 $form.Controls.Add($footer)
+$openLogs = New-Object Windows.Forms.Button
+$openLogs.SetBounds(18, 636, 260, 36)
+$openLogs.Text = Text-For 'Log klasörünü aç' 'Open log folder'
+$exportLogs = New-Object Windows.Forms.Button
+$exportLogs.SetBounds(296, 636, 290, 36)
+$exportLogs.Text = Text-For 'Logları masaüstüne kopyala' 'Copy logs to desktop'
+$form.Controls.AddRange(@($openLogs, $exportLogs))
+$openLogs.Add_Click({
+    try {
+        $directory = Join-Path $env:LOCALAPPDATA 'EdaAgentOfflineSetup\Logs'
+        [void][IO.Directory]::CreateDirectory($directory)
+        Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $directory + '"')
+    } catch { $output.Text = $_.Exception.Message }
+})
+$exportLogs.Add_Click({
+    try {
+        $destination = Export-SetupLogs -DestinationDirectory ([Environment]::GetFolderPath('DesktopDirectory'))
+        $output.Text = if ($destination) { (Text-For 'Loglar kopyalandı: ' 'Logs copied: ') + $destination } else { Text-For 'Kopyalanacak kurulum veya kaldırma logu yok.' 'No installation or uninstall logs to copy.' }
+    } catch { $output.Text = $_.Exception.Message }
+})
 
 function Set-Controls([bool]$Enabled) {
     foreach ($button in @($start, $status, $disconnect, $help, $target, $reconnect)) { $button.Enabled = $Enabled }

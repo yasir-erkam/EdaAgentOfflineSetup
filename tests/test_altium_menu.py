@@ -53,6 +53,47 @@ def write_state(workspace, revision, running=True):
 
 
 class MenuTests(unittest.TestCase):
+    def test_partial_response_is_retried_until_complete(self):
+        with fixture() as root:
+            control = menu.Controller(root, timeout=1)
+            original_read = Path.read_text
+            samples = iter(['', '{"id":', UnicodeDecodeError('utf-8', b'\xc3', 0, 1, 'partial')])
+            attempts = []
+
+            def read(path, *args, **kwargs):
+                if not path.name.startswith('response_'):
+                    return original_read(path, *args, **kwargs)
+                attempts.append(path)
+                value = next(samples, None)
+                if isinstance(value, Exception):
+                    raise value
+                if value is not None:
+                    return value
+                return json.dumps({'id': path.stem.removeprefix('response_'),
+                    'protocol_version': 2, 'success': True, 'data': {'confirmed': True}})
+
+            with patch.object(Path, 'read_text', read):
+                self.assertEqual(control.request('eda_menu.status'), {'confirmed': True})
+            self.assertEqual(len(attempts), 4)
+            self.assertEqual(list(control.workspace.glob('*_*.json')), [])
+
+    def test_permanently_partial_response_reaches_deadline(self):
+        with fixture() as root:
+            control = menu.Controller(root, timeout=0.1)
+            marker = control.workspace / 'response_other.json'
+            marker.write_bytes(b'keep')
+            original_read = Path.read_text
+
+            def read(path, *args, **kwargs):
+                return '{' if path.name.startswith('response_') else original_read(path, *args, **kwargs)
+
+            started = time.monotonic()
+            with patch.object(Path, 'read_text', read), self.assertRaises(TimeoutError):
+                control.request('eda_menu.status')
+            self.assertGreaterEqual(time.monotonic() - started, 0.1)
+            self.assertEqual(list(control.workspace.glob('*_*.json')), [marker])
+            self.assertEqual(marker.read_bytes(), b'keep')
+
     def test_cli_emits_unicode_json_even_with_ansi_parent(self):
         buffer = io.BytesIO()
         stream = io.TextIOWrapper(buffer, encoding="cp1252")

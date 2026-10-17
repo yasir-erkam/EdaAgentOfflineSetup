@@ -51,7 +51,7 @@ Invoke-Python -Arguments @('-m', 'pip', 'check')
 Invoke-Python -Arguments @('-c', 'import eda_agent.server, win32api, pythoncom, comtypes, numpy, scipy, matplotlib, flask')
 if ($Backend -eq 'kicad') { Invoke-Python -Arguments @('-c', 'import kipy') }
 Write-Host 'Runtime imports OK'
-foreach ($name in @('launch.py', 'configure_opencode.py', 'Start-EdaAgent.cmd')) {
+foreach ($name in @('launch.py', 'configure_opencode.py', 'Start-EdaAgent.cmd', 'setup_logging.ps1')) {
     Copy-Item (Join-Path $PSScriptRoot "payload\$name") $bundle
 }
 if ($Backend -eq 'altium') {

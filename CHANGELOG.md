@@ -1,6 +1,10 @@
 # Sürüm Notları
 
-## Unreleased
+## 0.1.6
+
+- Her iki paket için kurulum/kaldırma aşamaları ve hata kodları kalıcı, tarihli tanı loglarına yazılır. Başlat menüsüne log klasörü kısayolu; Altium yardımcısına klasörü açma ve logları masaüstüne kopyalama düğmeleri eklendi. Loglar kaldırma sonrası korunur; yapılandırma içeriği ve API anahtarları kaydedilmez.
+- Altium yanıt dosyası henüz yazılıyorsa geçici JSON/UTF-8 okuma hataları zaman aşımına kadar yeniden denenir; kalıcı bozuk yanıtlar da zaman aşımıyla sonlanır.
+- Altium menü desteği seçiliyken çalışan Altium oturumları sihirbazın dosyaları kopyalamasından önce denetlenir.
 
 - Altium için isteğe bağlı menü komutu hazırlığı ve beş işlemli TR/EN kontrol penceresi eklendi. Altium Customize kaydı elle yapılır; profil dosyaları otomatik değiştirilmez. Canlı Altium doğrulaması bekliyor.
 - Yeni bağlantı yardımcısı asenkron çalışır; durum kontrolü doctor kullanmaz. Korumalı modda hedef proje seçimi, eski isteklerin geçersiz kılınması ve kaydetmeyen bağlantı kesme yolu eklendi.

@@ -1,15 +1,17 @@
-param([switch]$ConfigureOpenCode, [string]$OpenCodeConfig, [switch]$EnableAltiumMenu)
+param([switch]$ConfigureOpenCode, [string]$OpenCodeConfig, [switch]$EnableAltiumMenu, [string]$LogPath)
 $ErrorActionPreference = 'Stop'
 $setupExit = 0
-Start-Transcript -LiteralPath (Join-Path $PSScriptRoot 'setup-configuration.log') -Append | Out-Null
+. (Join-Path $PSScriptRoot 'setup_logging.ps1')
+if (-not $LogPath) { $LogPath = New-SetupLog -Operation install }
 try {
-    $options = @{ BundlePath = $PSScriptRoot; InstallDir = $PSScriptRoot; ConfigureExisting = $true }
+    $options = @{ BundlePath = $PSScriptRoot; InstallDir = $PSScriptRoot; ConfigureExisting = $true; LogPath = $LogPath }
     if ($ConfigureOpenCode) { $options.ConfigureOpenCode = $true }
     if ($OpenCodeConfig) { $options.OpenCodeConfig = $OpenCodeConfig }
     if ($EnableAltiumMenu) { $options.EnableAltiumMenu = $true }
     & "$PSScriptRoot\Install-Offline.ps1" @options
 } catch {
     $setupExit = 1
-    Write-Output ('SETUP FAILED: ' + $_.Exception.Message)
-} finally { Stop-Transcript | Out-Null }
+    Write-SetupLog -Path $LogPath -Event configuration-failed -Code $_.Exception.HResult
+    Write-Output "SETUP FAILED. Log: $LogPath"
+}
 exit $setupExit

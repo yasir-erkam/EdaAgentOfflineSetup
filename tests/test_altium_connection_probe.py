@@ -7,6 +7,7 @@ import threading
 import time
 import unittest
 import uuid
+from unittest.mock import patch
 
 from probe_altium_connection import probe, validate_response
 
@@ -34,6 +35,34 @@ def response_for(request_id):
 
 
 class ConnectionProbeTests(unittest.TestCase):
+    def test_partial_response_is_retried_until_complete(self):
+        with fixture_directory() as folder:
+            samples = iter(['', '{"id":', UnicodeDecodeError('utf-8', b'\xc3', 0, 1, 'partial')])
+            attempts = []
+            original_read = Path.read_text
+
+            def read(path, *args, **kwargs):
+                if not path.name.startswith('response_'):
+                    return original_read(path, *args, **kwargs)
+                attempts.append(path)
+                value = next(samples, None)
+                if isinstance(value, Exception):
+                    raise value
+                return value if value is not None else json.dumps(response_for(path.stem.removeprefix('response_')))
+
+            with patch.object(Path, 'read_text', read):
+                self.assertEqual(probe(folder, timeout=1)['status'], 'responsive')
+            self.assertEqual(len(attempts), 4)
+            self.assertEqual(list(folder.iterdir()), [])
+
+    def test_permanently_partial_response_reaches_deadline(self):
+        with fixture_directory() as folder:
+            started = time.monotonic()
+            with patch.object(Path, 'read_text', return_value='{'), self.assertRaises(TimeoutError):
+                probe(folder, timeout=0.1)
+            self.assertGreaterEqual(time.monotonic() - started, 0.1)
+            self.assertEqual(list(folder.iterdir()), [])
+
     def test_ping_only_and_unrelated_files_preserved(self):
         with fixture_directory() as folder:
             workspace = folder / "Türkçe çalışma alanı"

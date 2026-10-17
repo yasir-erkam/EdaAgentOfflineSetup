@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([Parameter(Mandatory = $true)][string]$InstallerPath)
 $ErrorActionPreference = 'Stop'
 $InstallerPath = (Resolve-Path -LiteralPath $InstallerPath).Path
@@ -13,6 +13,8 @@ $original = '{"provider":{"test":{"options":{"apiKey":"preserve-this"}}},"mcp":{
 [IO.File]::WriteAllText($config, $original, (New-Object Text.UTF8Encoding($false)))
 $oldPointer = $env:EDA_AGENT_POINTER_FILE
 $env:EDA_AGENT_POINTER_FILE = Join-Path $testRoot 'pointer\workspace-path.txt'
+$logStarted = Get-Date
+$logDirectory = Join-Path $env:LOCALAPPDATA 'EdaAgentOfflineSetup\Logs'
 function Invoke-Wizard([string]$Language, [string]$Destination, [string]$ConfigFile) {
     $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOICONS', '/TASKS=opencode,altiummenu', "/LANG=$Language",
         ('/DIR="' + $Destination + '"'), ('/OPENCODECONFIG="' + $ConfigFile + '"'), ('/LOG="' + "$testRoot\setup-$Language.log" + '"'))
@@ -36,6 +38,21 @@ try {
     $menuState = Get-Content "$install\setup-state.json" -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($menuState.schemaVersion -ne 2 -or $menuState.altiumMenu.status -ne 'pending-user-registration' -or $menuState.altiumMenu.profileModified) { throw 'Menu registration was incorrectly reported as automatic.' }
     $menuOwner = $menuState.altiumMenu.installationId
+    # A live X2 process must block setup before even an existing payload changes.
+    $fakeAltium = Join-Path $testRoot 'X2.exe'
+    Add-Type -TypeDefinition 'public class FakeAltium { public static void Main() { System.Threading.Thread.Sleep(120000); } }' -OutputAssembly $fakeAltium -OutputType ConsoleApplication
+    $process = Start-Process -FilePath $fakeAltium -WindowStyle Hidden -PassThru
+    $readme = Join-Path $install 'README.md'
+    $readmeBytes = [IO.File]::ReadAllBytes($readme)
+    try {
+        [IO.File]::WriteAllText($readme, 'preflight-must-preserve-this')
+        $blocked = Invoke-Wizard 'english' $install $config
+        if ($blocked -eq 0 -or [IO.File]::ReadAllText($readme) -ne 'preflight-must-preserve-this') { throw 'Running Altium was not rejected before replacing payload files.' }
+    } finally {
+        if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+        $process.Dispose()
+        [IO.File]::WriteAllBytes($readme, $readmeBytes)
+    }
     $menuState | Add-Member -NotePropertyName futureField -NotePropertyValue 'preserve'
     [IO.File]::WriteAllText("$install\setup-state.json", ($menuState | ConvertTo-Json -Depth 8), (New-Object Text.UTF8Encoding($false)))
     if (-not (Test-Path $registration)) { throw 'Windows uninstall registration missing.' }
@@ -67,6 +84,14 @@ try {
     if (Test-Path $env:EDA_AGENT_POINTER_FILE) { throw 'Uninstall left its workspace pointer.' }
     if ([IO.File]::ReadAllText($sentinel) -ne 'keep') { throw 'Uninstall removed workspace data.' }
     if (Test-Path $registration) { throw 'Uninstall registration was not removed.' }
+    $persistentLogs = @(Get-ChildItem -LiteralPath $logDirectory -Filter '*.log' -File | Where-Object LastWriteTime -ge $logStarted)
+    $installs = @($persistentLogs | Where-Object Name -like 'install-altium-*')
+    $uninstalls = @($persistentLogs | Where-Object Name -like 'uninstall-altium-*')
+    if ($installs.Count -lt 5 -or $uninstalls.Count -lt 1) { throw 'Persistent per-operation logs were not retained after uninstall.' }
+    $allDiagnostics = ($persistentLogs | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join "`n"
+    if ($allDiagnostics.Contains('preserve-this') -or $allDiagnostics.Contains($config)) { throw 'Persistent logs exposed configuration contents or path.' }
+    if ($allDiagnostics -notmatch 'event=altium-preflight-failed' -or $allDiagnostics -notmatch 'event=configuration-failed') { throw 'Failure diagnostics are missing.' }
+    if ([IO.File]::ReadAllText($uninstalls[-1].FullName) -notmatch 'event=completed') { throw 'Uninstall completion was not logged.' }
     Write-Host "PASS: GUI invalid-config preflight, TR install, EN reinstall, offline MCP, uninstall, preserved API key/other MCP/workspace. Logs: $testRoot"
 } finally {
     if ($null -eq $oldPointer) { Remove-Item Env:EDA_AGENT_POINTER_FILE -ErrorAction SilentlyContinue } else { $env:EDA_AGENT_POINTER_FILE = $oldPointer }

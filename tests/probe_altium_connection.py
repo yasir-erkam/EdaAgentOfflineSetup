@@ -66,11 +66,11 @@ def probe(workspace, timeout=10.0):
         deadline = time.monotonic() + timeout
         while True:
             try:
-                raw = response_path.read_text(encoding="utf-8-sig")
-            except (FileNotFoundError, PermissionError):
+                response = json.loads(response_path.read_text(encoding="utf-8-sig"))
+            except (FileNotFoundError, PermissionError, json.JSONDecodeError, UnicodeDecodeError):
                 pass
             else:
-                return validate_response(json.loads(raw), request_id)
+                return validate_response(response, request_id)
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError("No pong before the deadline; bridge state is unknown.")

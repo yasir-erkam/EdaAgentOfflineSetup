@@ -149,7 +149,9 @@ class Controller:
             while True:
                 try:
                     data = json.loads(response.read_text(encoding="utf-8-sig"))
-                except (FileNotFoundError, PermissionError):
+                except (FileNotFoundError, PermissionError, json.JSONDecodeError, UnicodeDecodeError):
+                    # SaveToFile publishes directly to this path; an existing file
+                    # may still contain only part of the JSON or a UTF-8 character.
                     pass
                 else:
                     if not isinstance(data, dict) or data.get("id") != request_id or type(data.get("protocol_version")) is not int or data["protocol_version"] != 2:

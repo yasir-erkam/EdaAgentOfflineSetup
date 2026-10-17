@@ -2,7 +2,7 @@
 param(
     [string]$BundlePath,
     [ValidateSet('altium', 'kicad')][string]$Backend = 'altium',
-    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.5',
+    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')][string]$SetupVersion = '0.1.6',
     [string]$IsccPath
 )
 $ErrorActionPreference = 'Stop'
@@ -24,7 +24,7 @@ foreach ($row in $rows) {
 foreach ($name in @('Install-Offline.ps1', 'README.md', 'LICENSE')) {
     if ((Get-FileHash (Join-Path $PSScriptRoot $name)).Hash -ne (Get-FileHash (Join-Path $BundlePath $name)).Hash) { throw "Stale bundle: $name. Prepare a new bundle." }
 }
-foreach ($name in @('launch.py', 'configure_opencode.py', 'Start-EdaAgent.cmd')) {
+foreach ($name in @('launch.py', 'configure_opencode.py', 'Start-EdaAgent.cmd', 'setup_logging.ps1')) {
     if ((Get-FileHash (Join-Path $PSScriptRoot "payload\$name")).Hash -ne (Get-FileHash (Join-Path $BundlePath $name)).Hash) { throw "Stale bundle: $name. Prepare a new bundle." }
 }
 if (-not $IsccPath) {

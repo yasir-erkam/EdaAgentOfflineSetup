@@ -14,8 +14,8 @@ Kullandığınız EDA uygulamasına uygun ayrı paketi seçin:
 
 | EDA uygulaması | Kurulum dosyası | OpenCode MCP adı |
 | --- | --- | --- |
-| Altium Designer | `EdaAgentOfflineSetup-0.1.5-altium.exe` | `eda-agent` |
-| KiCad 9+ | `EdaAgentOfflineSetup-0.1.5-kicad.exe` | `eda-agent-kicad` |
+| Altium Designer | `EdaAgentOfflineSetup-0.1.6-altium.exe` | `eda-agent` |
+| KiCad 9+ | `EdaAgentOfflineSetup-0.1.6-kicad.exe` | `eda-agent-kicad` |
 
 Paketler ayrı uygulama kayıtları ve dizinler kullanır; birlikte kurulabilir.
 Birini kaldırmak diğerinin OpenCode bağlantısını veya çalışma dosyalarını silmez.
@@ -27,25 +27,20 @@ tıklayın. Türkçe veya İngilizce sihirbazdan kurulum dizinini seçin. Öneri
 PowerShell komutu çalıştırmanız gerekmez; tüm bağımlılıklar EXE içindedir.
 
 **Altium paketi:** Kurulum sonunda **Altium bağlantı yardımcısını aç** seçeneğini kullanın. Altium'u
-açıp projenizi yükledikten sonra **Altium'a bağlan** düğmesine basın. Yardımcı,
+açıp projenizi yükledikten sonra **Bağlantıyı başlat** düğmesine basın. Yardımcı,
 upstream `relaunch` komutuyla çalışan Altium oturumuna scripti başlatma isteği
 gönderir. OpenCode'u yeniden başlatın. Yardımcıya daha sonra Başlat menüsündeki
 **EDA Agent for Altium > Altium Bağlantı Yardımcısı** kısayolundan ulaşabilirsiniz.
 
-Altium sürümünüz doğrudan başlatmayı desteklemiyorsa yardımcıdaki elle tanıtma
-adımlarını izleyin; script yolu kopyalanabilir ve klasörü tek düğmeyle açılabilir.
-Gerçek Altium bağlantısı hedef bilgisayarda doğrulanmalıdır.
+Altium sürümünüz doğrudan başlatmayı desteklemiyorsa kurulu script projesini
+Altium içinden elle başlatın. Gerçek Altium bağlantısı hedef bilgisayarda doğrulanmalıdır.
 
-0.1.5 sürümü Altium içine EDA Agent menüsü eklemez. Menü ve proje hedefleme çalışması
-[uygulama planında](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.5/docs/altium-menu-integration-plan.md) belgelenmiştir; canlı prototip
-doğrulaması beklemektedir. Mevcut yardımcıdaki **Bağlantıyı denetle** düğmesi upstream
-`doctor` çalıştırır ve açık belgeleri kaydedebilir.
-
-**Kaynak koddaki yeni uygulama:** Yeni derlemelerde isteğe bağlı **Altium menü komutunu
-hazırla** seçeneği, beş işlemli kontrol penceresini Altium'a elle eklemek için komut
-dosyası üretir. Korumalı mod şu anda yalnız üç PCB aracını destekler; diğer tasarım
-komutlarını engeller. Yeni bağlantı yardımcısı durum kontrolünde belge kaydetmez.
-Canlı Altium doğrulaması bekliyor. [Kullanım ve kapsam](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/main/docs/altium-menu-usage.md).
+İsteğe bağlı **Altium menü komutunu hazırla** seçeneği, beş işlemli kontrol
+penceresini Altium'a elle eklemek için komut dosyası üretir. Korumalı mod şu anda
+yalnız üç PCB aracını destekler; diğer tasarım komutlarını engeller. Bağlantı
+yardımcısı durum kontrolünde belge kaydetmez. Menü desteği seçiliyken açık Altium
+oturumları dosyalar kopyalanmadan önce kurulumu durdurur.
+Canlı Altium doğrulaması bekliyor. [Kullanım ve kapsam](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.6/docs/altium-menu-usage.md).
 Altium paketinde bu belge `docs\altium-menu-usage.md` olarak çevrimdışı da bulunur.
 
 **KiCad paketi:** KiCad 9+ içinde **Preferences > Plugins > KiCad API server**
@@ -60,6 +55,16 @@ Altium işaretçisini temizler. Diğer MCP'ler, sağlayıcı/API anahtarı ayarl
 ayar yedekleri ve `workspace` içeriği korunur. Aynı dizine yeniden kurulum
 desteklenir; önce OpenCode ve Altium'u kapatın.
 
+Kurulum ve kaldırma için ayrı, tarihli tanı logları
+`%LOCALAPPDATA%\EdaAgentOfflineSetup\Logs` altında tutulur ve kaldırma sonrası
+korunur. Loglar işlem aşamalarını ve sayısal hata kodlarını içerir; API anahtarları,
+yapılandırma içeriği ve alt süreç çıktısı kaydedilmez. Hata mesajları log yolunu
+gösterir. Klasöre her iki paketin Başlat menüsündeki **Logs** kısayolundan;
+Altium yardımcısında **Log klasörünü aç** düğmesinden ulaşabilirsiniz.
+**Logları masaüstüne kopyala**, yalnız bu tanı loglarını yeni bir klasöre kopyalar.
+Ana konum yazılamazsa loglar `%TEMP%\EdaAgentOfflineSetup\Logs` altında oluşturulur;
+bu yedek konumdaki dosyalara hata mesajındaki yoldan ulaşılır.
+
 ## Tek EXE paketini üretme
 
 İnternetli hazırlama bilgisayarında önce aşağıdaki bölümdeki
@@ -73,7 +78,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1 -Backe
 
 Seçilen backend için en yeni hazırlanmış paket seçilir; varsayılan backend
 `altium`'dur. `-BundlePath`,
-`-SetupVersion 0.1.5` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
+`-SetupVersion 0.1.6` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
 özelleştirilebilir. Kaynak scriptler değiştiyse eski paket reddedilir; yeniden
 hazırlayın. EXE ve `.sha256` dosyası `dist` altında üretilir. Derleme sürümü
 upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme yapmaz.
@@ -96,15 +101,15 @@ sürümler değiştirilmez.
 İlk yayın için bu otomasyonu içeren commit'ten sonra Eda deposunda etiket oluşturup gönderin:
 
 ```powershell
-git tag -a v0.1.5 -m "Release EDA installers 0.1.5"
-git push --atomic origin main refs/tags/v0.1.5
+git tag -a v0.1.6 -m "Release EDA installers 0.1.6"
+git push --atomic origin main refs/tags/v0.1.6
 ```
 
 Sonraki yayınlarda paket sürümlerini ve CHANGELOG'u güncelleyin, commit ve yeni
 etiket oluşturun. GitHub'da **Actions → Release EDA installers → Run workflow**
 üzerinden mevcut bir etiketi girerek de çalıştırabilirsiniz. Seçilen etiketin
 otomasyon dosyalarını içermesi gerekir. OpenCode deposunun `v1.1.3` etiketi Eda
-deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.5`'dir.
+deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.6`'dir.
 
 `release-source.json` upstream EDA Agent commit'ini ve Python sürümünü sabitler;
 iki backend aynı kaynakla derlenir. Python bağımlılıkları her hazırlamada yeniden
@@ -234,7 +239,7 @@ ve açık Altium oturumunu ayrıca kontrol edin.
 
 `python tests/test_altium_connection_probe.py` ping probunu geçici workspace ve taklit
 yanıtlarla sınar; Altium gerektirmez. Gerçek test ortamındaki yalnız ping kontrolü ve
-menü prototipi adımları [doğrulama listesinde](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.5/docs/altium-menu-prototype-checklist.md)
+menü prototipi adımları [doğrulama listesinde](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.6/docs/altium-menu-prototype-checklist.md)
 bulunur. Bu depo aracı kurulum paketine dahil değildir.
 
 `tests\Test-OfflineBundle.ps1 -BundlePath '...\dist\EdaAgent-...'` geçici dizinde

@@ -2,7 +2,7 @@
   #error Build using Build-Installer.ps1
 #endif
 #ifndef SetupVersion
-  #define SetupVersion "0.1.5"
+  #define SetupVersion "0.1.6"
 #endif
 #if Backend == "altium"
   #define ProductName "EDA Agent for Altium"
@@ -73,6 +73,10 @@ turkish.WrongDirectory=Seçilen dizinde başka bir EDA Agent paketi veya okunama
 english.WrongDirectory=The selected folder contains a different EDA Agent package or unreadable setup information. Choose a different installation folder for {#EdaName}.
 turkish.UnregisterFailed=OpenCode bağlantısı kaldırılamadı. Ayar dosyasını kontrol edip yeniden deneyin.
 english.UnregisterFailed=Could not remove the OpenCode integration. Check your configuration file and try again.
+turkish.DiagnosticDetails=Tanı günlüğü: %1
+english.DiagnosticDetails=Diagnostic log: %1
+turkish.CloseAltium=Menü desteğini hazırlamadan önce tüm Altium oturumlarını kapatın ve yeniden deneyin.
+english.CloseAltium=Close all Altium sessions before preparing menu support, then try again.
 #if Backend == "altium"
 turkish.FinishedLabel=EDA Agent kuruldu. Altium Designer'ı açtıktan sonra bağlantı yardımcısını kullanın. OpenCode'u yeniden başlatmanız gerekir.
 english.FinishedLabel=EDA Agent is installed. Open Altium Designer, then use the connection assistant. Restart OpenCode to load the integration.
@@ -106,6 +110,7 @@ Source: "installer\Invoke-Setup.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Name: "{group}\{cm:AssistantShortcut}"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File ""{app}\Connection-Assistant.ps1"" -Language {language}"; IconFilename: "{app}\runtime\python.exe"
 #endif
 Name: "{group}\{#ProductName} - README"; Filename: "{app}\README.md"
+Name: "{group}\{#ProductName} - Logs"; Filename: "{localappdata}\EdaAgentOfflineSetup\Logs"
 Name: "{group}\{cm:UninstallProgram,{#ProductName}}"; Filename: "{uninstallexe}"
 
 [Run]
@@ -133,6 +138,71 @@ var
   CopyrightLabel: TNewStaticText;
   ConfigurationFailed: Boolean;
   PreflightReady: Boolean;
+  DiagnosticLogFile: String;
+  OperationCompleted: Boolean;
+
+procedure DiagnosticEvent(const EventName: String; Code: Integer);
+begin
+  { Only fixed events and numeric codes are persisted. No config or child output. }
+  if DiagnosticLogFile <> '' then
+    if not SaveStringToFile(DiagnosticLogFile, Utf8Encode(
+        GetDateTimeString('yyyy-mm-dd hh:nn:ss', '-', ':') +
+        ' event=' + EventName + ' code=' + IntToStr(Code) + #13#10), True) then
+      Log('Could not update the diagnostic log.');
+end;
+
+function CreateDiagnosticLog(const Directory, Operation: String): Boolean;
+var
+  Name: String;
+begin
+  Result := False;
+  if not ForceDirectories(Directory) then Exit;
+  Name := Operation + '-{#Backend}-' + GetDateTimeString('yyyymmdd-hhnnss', '-', '-') +
+    '-' + IntToStr(Random(2147483647)) + '.log';
+  DiagnosticLogFile := AddBackslash(Directory) + Name;
+  while FileExists(DiagnosticLogFile) do
+    DiagnosticLogFile := AddBackslash(Directory) + Operation + '-{#Backend}-' +
+      GetDateTimeString('yyyymmdd-hhnnss', '-', '-') + '-' + IntToStr(Random(2147483647)) + '.log';
+  Result := SaveStringToFile(DiagnosticLogFile, '', False);
+  if not Result then DiagnosticLogFile := '';
+end;
+
+procedure StartDiagnosticLog(const Operation: String);
+var
+  Created: Boolean;
+begin
+  Created := CreateDiagnosticLog(ExpandConstant('{localappdata}\EdaAgentOfflineSetup\Logs'), Operation);
+  if not Created then
+    Created := CreateDiagnosticLog(ExpandConstant('{%TEMP}\EdaAgentOfflineSetup\Logs'), Operation);
+  if Created then begin
+    DiagnosticEvent('started', 0);
+    DiagnosticEvent('version-{#SetupVersion}', 0);
+  end else Log('Could not create a diagnostic log.');
+end;
+
+function InitializeSetup: Boolean;
+begin
+  StartDiagnosticLog('install');
+  Result := True;
+end;
+
+procedure DeinitializeSetup;
+begin
+  if not OperationCompleted then DiagnosticEvent('not-completed', 1);
+  DiagnosticEvent('closed', 0);
+end;
+
+function InitializeUninstall: Boolean;
+begin
+  StartDiagnosticLog('uninstall');
+  Result := True;
+end;
+
+procedure DeinitializeUninstall;
+begin
+  if not OperationCompleted then DiagnosticEvent('not-completed', 1);
+  DiagnosticEvent('closed', 0);
+end;
 
 function ConfigurationSucceeded: Boolean;
 begin
@@ -165,7 +235,7 @@ begin
   if CurPageID = wpFinished then begin
     if ConfigurationFailed then begin
       WizardForm.FinishedHeadingLabel.Caption := CustomMessage('ConfigurationFailedHeading');
-      WizardForm.FinishedLabel.Caption := FmtMessage(CustomMessage('ConfigurationFailed'), [ExpandConstant('{app}\setup-configuration.log')]);
+      WizardForm.FinishedLabel.Caption := FmtMessage(CustomMessage('ConfigurationFailed'), [DiagnosticLogFile]);
     end else
       WizardForm.FinishedLabel.Caption := CustomMessage('FinishedLabel');
   end;
@@ -187,6 +257,22 @@ var
   ResultCode: Integer;
 begin
   Result := '';
+  DiagnosticEvent('preflight', 0);
+#if Backend == "altium"
+  if WizardIsTaskSelected('altiummenu') then begin
+    Parameters := '-NoProfile -NonInteractive -Command "if (Get-Process -Name X2,DXP -ErrorAction SilentlyContinue) { exit 1 }"';
+    ResultCode := -1;
+    if not Exec(PowerShellPath, Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      Result := CustomMessage('CloseAltium')
+    else if ResultCode <> 0 then
+      Result := CustomMessage('CloseAltium');
+    if Result <> '' then begin
+      DiagnosticEvent('altium-preflight-failed', ResultCode);
+      Result := Result + #13#10 + FmtMessage(CustomMessage('DiagnosticDetails'), [DiagnosticLogFile]);
+      Exit;
+    end;
+  end;
+#endif
   if not PreflightReady then begin
     ExtractTemporaryFiles('{tmp}\preflight\*');
     PreflightReady := True;
@@ -194,10 +280,14 @@ begin
   Parameters := '"' + ExpandConstant('{tmp}') + '\preflight\check_install_target.py" "' + ExpandConstant('{app}') + '" {#Backend}';
   if not Exec(ExpandConstant('{tmp}\preflight\runtime\python.exe'), Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then begin
     Result := CustomMessage('WrongDirectory');
+    DiagnosticEvent('target-preflight-failed', -1);
+    Result := Result + #13#10 + FmtMessage(CustomMessage('DiagnosticDetails'), [DiagnosticLogFile]);
     Exit;
   end;
   if ResultCode <> 0 then begin
     Result := CustomMessage('WrongDirectory');
+    DiagnosticEvent('target-preflight-failed', ResultCode);
+    Result := Result + #13#10 + FmtMessage(CustomMessage('DiagnosticDetails'), [DiagnosticLogFile]);
     Exit;
   end;
   if WizardIsTaskSelected('opencode') then begin
@@ -208,6 +298,10 @@ begin
     else if ResultCode <> 0 then
       Result := FmtMessage(CustomMessage('InvalidConfig'), [ConfigPath]);
   end;
+  if Result <> '' then begin
+    DiagnosticEvent('config-preflight-failed', ResultCode);
+    Result := Result + #13#10 + FmtMessage(CustomMessage('DiagnosticDetails'), [DiagnosticLogFile]);
+  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -215,10 +309,16 @@ var
   Parameters, ConfigPath, LogFile: String;
   ResultCode: Integer;
 begin
+  if CurStep = ssInstall then DiagnosticEvent('copying-files', 0);
+  if CurStep = ssDone then begin
+    OperationCompleted := True;
+    if ConfigurationFailed then DiagnosticEvent('failed', 10)
+    else DiagnosticEvent('completed', 0);
+  end;
   if CurStep = ssPostInstall then begin
     WizardForm.StatusLabel.Caption := CustomMessage('Configuring');
-    LogFile := ExpandConstant('{app}\setup-configuration.log');
-    Parameters := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\Invoke-Setup.ps1') + '"';
+    LogFile := DiagnosticLogFile;
+    Parameters := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\Invoke-Setup.ps1') + '" -LogPath "' + LogFile + '"';
 #if Backend == "altium"
     if WizardIsTaskSelected('altiummenu') then
       Parameters := Parameters + ' -EnableAltiumMenu';
@@ -229,11 +329,13 @@ begin
       if ConfigPath <> '' then
         Parameters := Parameters + ' -OpenCodeConfig "' + ConfigPath + '"';
     end;
+    ResultCode := -1;
     if not Exec(PowerShellPath, Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
       ConfigurationFailed := True
     else if ResultCode <> 0 then
       ConfigurationFailed := True;
     if ConfigurationFailed then begin
+      DiagnosticEvent('configuration-failed', ResultCode);
       Log(FmtMessage(CustomMessage('ConfigurationFailed'), [LogFile]));
       if not WizardSilent then MsgBox(FmtMessage(CustomMessage('ConfigurationFailed'), [LogFile]), mbError, MB_OK);
     end;
@@ -245,12 +347,22 @@ var
   Parameters: String;
   ResultCode: Integer;
 begin
+  if CurUninstallStep = usDone then begin
+    OperationCompleted := True;
+    DiagnosticEvent('completed', 0);
+  end;
   if CurUninstallStep = usUninstall then begin
+    DiagnosticEvent('removing-files', 0);
     Parameters := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\Unregister-Integration.ps1') +
-      '" -InstallDir "' + ExpandConstant('{app}') + '"';
-    if not Exec(PowerShellPath, Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-      RaiseException(CustomMessage('UnregisterFailed'));
-    if ResultCode <> 0 then
-      RaiseException(CustomMessage('UnregisterFailed'));
+      '" -InstallDir "' + ExpandConstant('{app}') + '" -LogPath "' + DiagnosticLogFile + '"';
+    ResultCode := -1;
+    if not Exec(PowerShellPath, Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then begin
+      DiagnosticEvent('integration-removal-failed', ResultCode);
+      RaiseException(CustomMessage('UnregisterFailed') + #13#10 + FmtMessage(CustomMessage('DiagnosticDetails'), [DiagnosticLogFile]));
+    end;
+    if ResultCode <> 0 then begin
+      DiagnosticEvent('integration-removal-failed', ResultCode);
+      RaiseException(CustomMessage('UnregisterFailed') + #13#10 + FmtMessage(CustomMessage('DiagnosticDetails'), [DiagnosticLogFile]));
+    end;
   end;
 end;
