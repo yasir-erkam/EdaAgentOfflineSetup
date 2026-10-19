@@ -2,6 +2,8 @@
 
 ## 0.1.6
 
+- Türkçe kullanıcı belgeleri tek kurulum kılavuzu, kısa “İlk 5 dakika” rotası ve yetkili bağlantı/tanılama rehberi etrafında düzenlendi; sürüm kapsamı ile canlı EDA doğrulamasının sınırları açıklandı. Çevrimdışı belgeler yalnız kullanıcı içeriği ve görselleriyle sınırlandı; geliştirici bağlantıları depo web adreslerine taşındı. Kök `Build-Docs.ps1` tüm kullanıcı Markdown belgeleri için PDF üretir; `Test-Docs.ps1` yerel dosya ve başlık bağlantılarını denetler.
+- Kullanıcı belgelerinin depo kökündeki yinelenen Markdown/PDF kopyaları kaldırıldı; tek kaynak `docs/` oldu. Belge denetimi bu kopyaların yeniden eklenmesini hata olarak bildirir.
 - Her iki paket için kurulum/kaldırma aşamaları ve hata kodları kalıcı, tarihli tanı loglarına yazılır. Başlat menüsüne log klasörü kısayolu; Altium yardımcısına klasörü açma ve logları masaüstüne kopyalama düğmeleri eklendi. Loglar kaldırma sonrası korunur; yapılandırma içeriği ve API anahtarları kaydedilmez.
 - Altium yanıt dosyası henüz yazılıyorsa geçici JSON/UTF-8 okuma hataları zaman aşımına kadar yeniden denenir; kalıcı bozuk yanıtlar da zaman aşımıyla sonlanır.
 - Altium menü desteği seçiliyken çalışan Altium oturumları sihirbazın dosyaları kopyalamasından önce denetlenir.

@@ -53,6 +53,20 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
 
+      - name: Set up pinned documentation runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.15.0'
+          cache: npm
+          cache-dependency-path: tools/docs/package-lock.json
+
+      - name: Validate documentation and generate user PDFs before bundling
+        run: |
+          npm ci --prefix tools/docs --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Documentation dependency installation failed.' }
+          ./Test-Docs.ps1
+          ./Build-Docs.ps1
+
       - name: Build both offline bundles and installers
         env:
           SETUP_VERSION: ${{ steps.release.outputs.version }}

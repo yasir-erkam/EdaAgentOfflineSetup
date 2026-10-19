@@ -96,12 +96,11 @@ try {
             $createdInstall = $true
             Copy-Item -LiteralPath "$BundlePath\runtime" -Destination $InstallDir -Recurse
             Write-SetupLog -Path $LogPath -Event copying-files
-            foreach ($name in @('launch.py', 'Start-EdaAgent.cmd', 'configure_opencode.py', 'setup_logging.ps1', 'bundle.json', 'packages.lock.txt', 'README.md', 'LICENSE', 'upstream')) {
+            foreach ($name in @('launch.py', 'Start-EdaAgent.cmd', 'configure_opencode.py', 'setup_logging.ps1', 'bundle.json', 'packages.lock.txt', 'README.md', 'LICENSE', 'upstream', 'docs')) {
                 Copy-Item -LiteralPath (Join-Path $BundlePath $name) -Destination $InstallDir -Recurse
             }
             if ($manifest.backend -eq 'altium') {
                 Copy-Item -LiteralPath (Join-Path $BundlePath 'altium_menu.py') -Destination $InstallDir
-                Copy-Item -LiteralPath (Join-Path $BundlePath 'docs') -Destination $InstallDir -Recurse
             }
         }
         Write-SetupLog -Path $LogPath -Event configuring

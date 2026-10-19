@@ -5,65 +5,27 @@ bilgisayarlara taşınabilir bir paketle kurar. Python ve tüm Python bağımlı
 paketin içindedir; hedef bilgisayarda Python, pip, Git veya internet gerekmez.
 Windows 10/11 x64 ve kurulu/lisanslı EDA uygulaması gerekir.
 
-## Son kullanıcı için: tek EXE ile kurulum
+## Son kullanıcı için
 
-**Ön koşul:** Bu kuruluma başlamadan önce OpenCode'u kurun. OpenCode bu pakete
-dahil değildir; ayrı kurulmalıdır.
+Önce OpenCode'u ve kullanacağınız EDA uygulamasını ayrı kurun; çevrimdışı ortamda
+erişilebilir yerel veya kurum içi model de gerekir. Altium için `-altium.exe`,
+KiCad 9+ için `-kicad.exe` ile biten paketi seçin. İki paket birlikte kurulabilir.
+EasyEDA Pro desteklenmez.
 
-Kullandığınız EDA uygulamasına uygun ayrı paketi seçin:
+- **Kurulum ve ilk 5 dakika:** [Kullanım kılavuzu](docs/kullanim-kilavuzu.md).
+- **Bağlantı kontrolü, hata çözümü ve tanı günlükleri:**
+  [Bağlantı doğrulama rehberi](docs/baglanti-dogrulama.md).
+- **Tüm kullanıcı belgeleri:** [Belge indeksi](docs/README.md).
+- **İsteğe bağlı Altium menüsü:** [Kapsam ve kullanım](docs/altium-menu-usage.md).
+  Varsayılan olarak kapalıdır; canlı Altium doğrulaması beklemektedir.
 
-| EDA uygulaması | Kurulum dosyası | OpenCode MCP adı |
-| --- | --- | --- |
-| Altium Designer | `EdaAgentOfflineSetup-0.1.6-altium.exe` | `eda-agent` |
-| KiCad 9+ | `EdaAgentOfflineSetup-0.1.6-kicad.exe` | `eda-agent-kicad` |
+Bu belgeler kaynakta varsayılan kurulum sürümü **0.1.6** için hazırlanmıştır;
+bu bilgi bir Release'in yayımlandığını veya canlı EDA bağlantısının doğrulandığını
+göstermez. [Sürüm kapsamı ve doğrulama durumu](docs/kullanim-kilavuzu.md#sürüm-kapsamı-ve-doğrulama-durumu).
+Kurulumun çevrimdışı çalışması, internet gerektiren modellerin veya arama
+araçlarının çevrimdışı çalışacağı anlamına gelmez.
 
-Paketler ayrı uygulama kayıtları ve dizinler kullanır; birlikte kurulabilir.
-Birini kaldırmak diğerinin OpenCode bağlantısını veya çalışma dosyalarını silmez.
-Altium ve KiCad uygulamaları bu paketlere dahil değildir.
-
-Seçtiğiniz EXE dosyasını hedef bilgisayara taşıyıp çift
-tıklayın. Türkçe veya İngilizce sihirbazdan kurulum dizinini seçin. Önerilen
-**EDA Agent'ı OpenCode'a otomatik ekle** seçeneğini açık bırakın. Python veya
-PowerShell komutu çalıştırmanız gerekmez; tüm bağımlılıklar EXE içindedir.
-
-**Altium paketi:** Kurulum sonunda **Altium bağlantı yardımcısını aç** seçeneğini kullanın. Altium'u
-açıp projenizi yükledikten sonra **Bağlantıyı başlat** düğmesine basın. Yardımcı,
-upstream `relaunch` komutuyla çalışan Altium oturumuna scripti başlatma isteği
-gönderir. OpenCode'u yeniden başlatın. Yardımcıya daha sonra Başlat menüsündeki
-**EDA Agent for Altium > Altium Bağlantı Yardımcısı** kısayolundan ulaşabilirsiniz.
-
-Altium sürümünüz doğrudan başlatmayı desteklemiyorsa kurulu script projesini
-Altium içinden elle başlatın. Gerçek Altium bağlantısı hedef bilgisayarda doğrulanmalıdır.
-
-İsteğe bağlı **Altium menü komutunu hazırla** seçeneği, beş işlemli kontrol
-penceresini Altium'a elle eklemek için komut dosyası üretir. Korumalı mod şu anda
-yalnız üç PCB aracını destekler; diğer tasarım komutlarını engeller. Bağlantı
-yardımcısı durum kontrolünde belge kaydetmez. Menü desteği seçiliyken açık Altium
-oturumları dosyalar kopyalanmadan önce kurulumu durdurur.
-Canlı Altium doğrulaması bekliyor. [Kullanım ve kapsam](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.6/docs/altium-menu-usage.md).
-Altium paketinde bu belge `docs\altium-menu-usage.md` olarak çevrimdışı da bulunur.
-
-**KiCad paketi:** KiCad 9+ içinde **Preferences > Plugins > KiCad API server**
-seçeneğini açın ve PCB Editor'da bir kart yükleyin. OpenCode'u yeniden başlatın;
-`eda-agent-kicad` bağlantısını kullanın. Altium scripti veya bağlantı yardımcısı
-gerekmez. KiCad paketi Altium'un makine genelindeki işaretçisini değiştirmez;
-ortak 8766 portunu kullanmamak için web panosu varsayılan olarak kapalıdır.
-Gerçek KiCad bağlantısı hedef bilgisayarda doğrulanmalıdır.
-
-Windows'un uygulama kaldırma ekranı yalnız bu kurulumun OpenCode kaydını ve
-Altium işaretçisini temizler. Diğer MCP'ler, sağlayıcı/API anahtarı ayarları,
-ayar yedekleri ve `workspace` içeriği korunur. Aynı dizine yeniden kurulum
-desteklenir; önce OpenCode ve Altium'u kapatın.
-
-Kurulum ve kaldırma için ayrı, tarihli tanı logları
-`%LOCALAPPDATA%\EdaAgentOfflineSetup\Logs` altında tutulur ve kaldırma sonrası
-korunur. Loglar işlem aşamalarını ve sayısal hata kodlarını içerir; API anahtarları,
-yapılandırma içeriği ve alt süreç çıktısı kaydedilmez. Hata mesajları log yolunu
-gösterir. Klasöre her iki paketin Başlat menüsündeki **Logs** kısayolundan;
-Altium yardımcısında **Log klasörünü aç** düğmesinden ulaşabilirsiniz.
-**Logları masaüstüne kopyala**, yalnız bu tanı loglarını yeni bir klasöre kopyalar.
-Ana konum yazılamazsa loglar `%TEMP%\EdaAgentOfflineSetup\Logs` altında oluşturulur;
-bu yedek konumdaki dosyalara hata mesajındaki yoldan ulaşılır.
+Aşağıdaki bölümler paket hazırlayan geliştiriciler ve bakım ekibi içindir.
 
 ## Tek EXE paketini üretme
 
@@ -187,63 +149,21 @@ MCP bağlantısında yavaş ilk açılışlar için `timeout: 60000` (60 saniye)
 OpenCode'u yeniden başlatın. Diğer MCP istemcilerinde komut:
 `<kurulum>\runtime\python.exe`, argüman: `<kurulum>\launch.py`.
 
-OpenCodeSetup yeniden kurulduğunda veya OpenCode ayarları sıfırlandığında EDA'yı
-yeniden kurmadan mevcut bağlantıyı kaydetmek için (varsayılan dizinlerde):
-
-```powershell
-$edaDir = Join-Path $env:LOCALAPPDATA 'EdaAgent'
-& "$edaDir\runtime\python.exe" "$edaDir\configure_opencode.py" "$env:USERPROFILE\.config\opencode\opencode.jsonc" "$edaDir\opencode.mcp.json"
-```
-
-`opencode.json` kullanıyorsanız komutta bu dosyayı belirtin.
-
-Yeni paketler bağlam kullanımını azaltmak için `minimal` araç modunu kullanır.
-Mevcut kurulumda context window hatası alıyorsanız MCP kaydına
-`"environment": {"EDA_AGENT_TOOLSET": "minimal"}` ekleyip OpenCode'u yeniden
-başlatın ve yeni sohbet açın. Ayrıntılar: [MCP bağlam ayarı](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/main/docs/mcp-context.md).
-
-## 4. EDA bağlantısını etkinleştirin
-
-**Altium Designer:** DXP → Preferences → Scripting System → Global Projects →
-Install from file ile `<kurulum>\scripts\Altium_API.PrjScr` dosyasını tanıtın.
-Her Altium oturumunda File → Run Script → Dispatcher.pas → StartMCPServer → Run.
-Köprü `%ProgramData%\eda-agent\workspace-path.txt` dosyasını kullanır; yazma izni
-yoksa Bilgi İşlemden bu dizine erişim isteyin. Aynı anda farklı kullanıcıların
-veya kurulumların Altium köprülerini çalıştırmayın; işaretçi makine genelindedir.
-
-**KiCad:** KiCad 9+ içinde Preferences → Plugins → KiCad API server'ı açın.
-EasyEDA Pro bu pakette desteklenmez.
-
-```powershell
-& "$env:LOCALAPPDATA\EdaAgent\Start-EdaAgent.cmd" health
-& "$env:LOCALAPPDATA\EdaAgent\Start-EdaAgent.cmd" doctor
-```
-
-`doctor` Altium açık ve köprü çalışıyorken kullanılır; denetimin parçası olarak
-`application.save_all` çağırır ve açık belgeleri kaydedebilir. Upstream
-`application.stop_server` da değişmiş belgeleri kaydedebilir. MCP sunucusu stdio üzerinden
-istemci tarafından başlatılır; Windows servisi değildir. AI model erişimi ayrıdır:
-internetsiz ortamda yerel veya kurum içi erişilebilir model sunucusu gerekir.
-İnternet isteyen parça arama/datasheet indirme işlemleri çevrimdışı çalışmaz.
-Başlatıcı `health`, `doctor`, `relaunch` ve `install-scripts` komutlarının script
-konumunu da bu kurulumun `scripts` dizinine yönlendirir.
-
-Sabitlenen upstream sürümünde `health`, kurulumun eklediği `UnitStamp` değerlerini
-kaynak farkı sayarak temiz kurulumda da `deployed scripts current` uyarısı verebilir.
-Doğrulama testimiz scriptleri beklenen damgalarla karşılaştırır. EasyEDA eklentisi
-bu pakette derlenmediğinden onunla ilgili uyarı da beklenir; kritik bir Altium
-hatası anlamına gelmez. Gerçek tasarım üzerinde çalışmadan önce `doctor` sonucunu
-ve açık Altium oturumunu ayrıca kontrol edin.
+OpenCode kaydını onarmak, MCP araç modunu anlamak veya gerçek EDA bağlantısını
+doğrulamak için [bağlantı doğrulama rehberini](docs/baglanti-dogrulama.md) ve
+[MCP bağlam ayarını](docs/mcp-context.md) kullanın. Elle kurulumda bu rehberlerdeki
+EXE varsayılan yollarını kendi kurulum dizininizle değiştirin. Tanılama ve
+`doctor` komutunun belge kaydetme uyarıları için de bağlantı rehberi esas alınır.
 
 ## Geliştirme ve doğrulama
 
 `python tests/test_altium_connection_probe.py` ping probunu geçici workspace ve taklit
 yanıtlarla sınar; Altium gerektirmez. Gerçek test ortamındaki yalnız ping kontrolü ve
-menü prototipi adımları [doğrulama listesinde](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.6/docs/altium-menu-prototype-checklist.md)
+menü prototipi adımları [doğrulama listesinde](docs/gelistirici/altium-menu-prototype-checklist.md)
 bulunur. Bu depo aracı kurulum paketine dahil değildir.
 
 Hedef bilgisayardaki Altium/KiCad bağlantısını sınamak için
-[bağlantı doğrulama rehberini](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/main/docs/baglanti-dogrulama.md)
+[bağlantı doğrulama rehberini](docs/baglanti-dogrulama.md)
 izleyin.
 
 `tests\Test-OfflineBundle.ps1 -BundlePath '...\dist\EdaAgent-...'` geçici dizinde

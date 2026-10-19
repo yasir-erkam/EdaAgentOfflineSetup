@@ -1,0 +1,59 @@
+name: Documentation links and PDFs
+
+on:
+  push:
+    paths:
+      - '*.md'
+      - '*.pdf'
+      - 'docs/**'
+      - 'tools/docs/**'
+      - 'Build-Docs.ps1'
+      - 'Test-Docs.ps1'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/release.yml'
+  pull_request:
+    paths:
+      - '*.md'
+      - '*.pdf'
+      - 'docs/**'
+      - 'tools/docs/**'
+      - 'Build-Docs.ps1'
+      - 'Test-Docs.ps1'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.15.0'
+          cache: npm
+          cache-dependency-path: tools/docs/package-lock.json
+      - name: Install pinned documentation dependencies
+        run: |
+          npm ci --prefix tools/docs --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Documentation dependency installation failed.' }
+      - name: Check local documentation links
+        run: ./Test-Docs.ps1
+      - name: Render all user documentation PDFs with Windows Edge
+        run: ./Build-Docs.ps1
+      - name: Upload user documentation PDFs
+        uses: actions/upload-artifact@v7
+        with:
+          name: user-documentation-pdfs
+          path: docs/*.pdf
+          if-no-files-found: error
+          retention-days: 14

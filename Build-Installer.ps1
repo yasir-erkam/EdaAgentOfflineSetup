@@ -47,8 +47,12 @@ if ($metadata.backend -eq 'altium') {
     if ((Get-FileHash (Join-Path $PSScriptRoot 'payload\altium\altium_menu.py')).Hash -ne (Get-FileHash (Join-Path $BundlePath 'altium_menu.py')).Hash) { throw 'Stale Altium menu controller. Prepare a new bundle.' }
     & "$BundlePath\runtime\python.exe" (Join-Path $PSScriptRoot 'installer\apply_altium_menu.py') "$BundlePath\runtime\Lib\site-packages\eda_agent\scripts" --verify
     if ($LASTEXITCODE -ne 0) { throw 'Altium menu patch is stale or modified. Prepare a new bundle.' }
-    foreach ($name in @('altium-menu-usage.md', 'altium-menu-integration-plan.md', 'altium-menu-prototype-checklist.md')) {
-        if ((Get-FileHash (Join-Path $PSScriptRoot "docs\$name")).Hash -ne (Get-FileHash (Join-Path $BundlePath "docs\$name")).Hash) { throw "Stale bundle: $name. Prepare a new bundle." }
+}
+foreach ($file in @(Get-ChildItem (Join-Path $PSScriptRoot 'docs') -File | Where-Object Extension -in @('.md', '.pdf')) + @(Get-ChildItem (Join-Path $PSScriptRoot 'docs\images') -File -Recurse -ErrorAction SilentlyContinue)) {
+    $relative = $file.FullName.Substring((Join-Path $PSScriptRoot 'docs').Length + 1)
+    $bundled = Join-Path $BundlePath "docs\$relative"
+    if (-not (Test-Path -LiteralPath $bundled -PathType Leaf) -or (Get-FileHash $file.FullName).Hash -ne (Get-FileHash $bundled).Hash) {
+        throw "Stale bundle documentation: $relative. Prepare a new bundle."
     }
 }
 if ($PSBoundParameters.ContainsKey('Backend') -and $metadata.backend -ne $Backend) { throw 'BundlePath does not match the requested backend.' }

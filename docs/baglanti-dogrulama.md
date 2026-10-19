@@ -4,6 +4,12 @@ Hedef bilgisayarda **OpenCode → MCP → açık EDA uygulaması** zincirini
 doğrulamak için aşağıdaki adımları izleyin. OpenCode'da MCP'nin bağlı görünmesi
 tek başına EDA bağlantısını doğrulamaz.
 
+Kurulum ve paket seçimi için [kullanım kılavuzunu](kullanim-kilavuzu.md) izleyin;
+bu belge kurulumun yerine geçmez. [Sürüm kapsamı ve doğrulama durumu](kullanim-kilavuzu.md#sürüm-kapsamı-ve-doğrulama-durumu)
+orada açıklanır. Aşağıdaki adımlar hedef bilgisayarda uygulanacak kontrollerdir;
+başarılı bir canlı Altium/KiCad denemesi yapıldığı iddiası değildir.
+
+
 ## Ön Koşullar
 
 - OpenCode ve kullandığınız EDA uygulamasına uygun EDA Agent paketi kurulu olmalı.
@@ -17,13 +23,18 @@ tek başına EDA bağlantısını doğrulamaz.
 1. Altium'u açıp bir PCB belgesi yükleyin.
 2. Başlat menüsünden **EDA Agent for Altium → Altium Bağlantı Yardımcısı**
    uygulamasını açın.
-3. **Altium'a bağlan** düğmesine basın. Ek tanılama gerekiyorsa aşağıdaki
-   kaydetme davranışını dikkate alıp **Bağlantıyı denetle** seçeneğini kullanın.
+3. **Bağlantıyı başlat** düğmesine basın. Ardından **Bağlantı durumu** ile
+   köprünün yanıt verdiğini kontrol edin. Bu kontrol belge kaydetmez; tek başına
+   OpenCode bağlantısını doğrulamaz.
+4. İsteğe bağlı Altium menü desteği etkinse **Bağlantı durumu** ile proje
+   listesini yenileyin, hedef `.PrjPcb` projesini seçip **Hedef proje…** düğmesine
+   basın. Bu projeye ait PCB belgesini odakta tutun. Menü desteği kapalıysa
+   hedef seçimi etkin değildir.
 
-**Tanılama ve kaydetme:** Yardımcıdaki **Bağlantıyı denetle** seçeneği ve
-`doctor` komutu, `application.save_all` kontrolünü de çalıştırır; açık Altium
-belgelerini kaydedebilir. Kaydedilmemiş değişikliklerin korunması gerekiyorsa
-bu adımı atlayıp aşağıdaki `app_ping` ve `get_board_info` kontrollerini kullanın.
+**Tanılama ve kaydetme:** Bağımsız `doctor` komutu, `application.save_all`
+kontrolünü de çalıştırır; açık Altium belgelerini kaydedebilir. Kaydedilmemiş
+değişikliklerin korunması gerekiyorsa bu komutu atlayıp yardımcının
+**Bağlantı durumu** kontrolünü ve aşağıdaki salt okunur MCP isteklerini kullanın.
 
 PowerShell'den de tanılama yapabilirsiniz. EXE ile varsayılan kurulum için:
 
@@ -34,18 +45,34 @@ PowerShell'den de tanılama yapabilirsiniz. EXE ile varsayılan kurulum için:
 Özel bir kurulum dizini seçtiyseniz komuttaki yolu değiştirin. Sonuçta
 **`DelphiScript polling loop responsive`** kontrolünün geçmesini bekleyin.
 
-Bağlantı kurulmazsa Altium'da şu adımları uygulayın:
+Korumalı menü modu kapalıyken bağlantı kurulmazsa Altium'da şu adımları uygulayın:
 
 1. **DXP → Preferences → Scripting System → Global Projects → Install from file**
    üzerinden `<kurulum>\scripts\Altium_API.PrjScr` dosyasını tanıtın.
 2. **File → Run Script → Dispatcher.pas → StartMCPServer → Run** çalıştırın.
    Bu adımı her Altium oturumunda uygulayın.
-3. Tanılamayı yeniden çalıştırın.
+3. Yardımcıdaki **Bağlantı durumu** kontrolünü yeniden çalıştırın.
 
-OpenCode'u yeniden başlatıp şu isteği gönderin:
+Korumalı menü modu etkinse eski veya korumasız bir köprüyü ayrıca başlatmayın;
+[menü kullanım rehberindeki](altium-menu-usage.md) bağlantı ve kurtarma adımlarını
+izleyin. Canlı Altium doğrulaması hâlâ beklemektedir.
+
+OpenCode'u yeniden başlatın. **Korumalı menü modu kapalıysa** şu isteği gönderin:
 
 > `eda-agent` üzerinden `app_ping` aracını çalıştır. Ardından `get_board_info`
 > ile açık PCB'nin bilgilerini oku. Tasarımı değiştirme.
+
+**Korumalı menü modu etkinse** `get_board_info` kapsam dışında olduğundan
+engellenir. Hedef proje seçili ve bu projenin PCB belgesi odaktayken şu isteği
+gönderin:
+
+> `eda-agent` üzerinden `app_ping` aracını çalıştır. Ardından
+> `pcb_get_components` ve `pcb_get_nets` ile seçili projenin odaktaki PCB'sinin
+> bileşenlerini ve netlerini oku. Tasarımı değiştirme.
+
+Varsayılan minimal araç modunda model bu araçları `tool_catalog` ile keşfedip
+`tool_invoke` ile çağırır; ayrı araçlar olarak listelenmemeleri bağlantı hatası
+değildir. Ayrıntılar: [MCP bağlam ayarı](mcp-context.md).
 
 ## KiCad
 
@@ -62,10 +89,10 @@ KiCad paketi için Altium bağlantı yardımcısı veya DelphiScript kurulumu ge
 
 - Ping başarılı olmalı; KiCad için `kicad_ping` yanıtındaki `ok` değeri `true`
   olmalı.
-- Dönen kart adı ve bileşen sayıları açık PCB ile eşleşmeli.
-- `app_ping`, `kicad_ping` ve `get_board_info` kontrolleriyle tasarımı
-  değiştirmeden doğrulama yapılmalı. `doctor` için yukarıdaki kaydetme davranışını
-  dikkate alın.
+- Dönen kart bilgileri ve bileşenler açık PCB ile eşleşmeli. Korumalı modda
+  bileşen ve net listelerini seçili projenin odaktaki PCB'siyle karşılaştırın.
+- Yukarıdaki salt okunur MCP kontrolleriyle tasarımı değiştirmeden doğrulama
+  yapılmalı. `doctor` için kaydetme davranışını dikkate alın.
 
 ## Sorun Giderme
 
@@ -102,8 +129,10 @@ ayarlarını silmeyin. Ardından OpenCode'u yeniden başlatın.
 
 1. Altium'un açık olduğunu kontrol edin. Bekleyen iletişim kutularını inceleyip
    uygun şekilde kapatın; script bunların arkasında bekliyor olabilir.
-2. Bu kuruluma ait `scripts\Altium_API.PrjScr` projesini kullanarak
-   **Dispatcher.pas → StartMCPServer → Run** çalıştırın.
+2. Korumalı menü modu kapalıysa bu kuruluma ait `scripts\Altium_API.PrjScr`
+   projesinden **Dispatcher.pas → StartMCPServer → Run** çalıştırın. Korumalı
+   modda yardımcının **Bağlantıyı başlat** işlemini ve
+   [menü kullanım rehberini](altium-menu-usage.md) kullanın.
 3. `%ProgramData%\eda-agent\workspace-path.txt` dosyasını salt okunur kontrol edin.
    İçindeki yol, kullandığınız kurulumun `workspace` klasörünü göstermeli.
    Yanlış yolu geçici olarak elle değiştirmek yerine doğru kurulumun bağlantı
@@ -118,8 +147,9 @@ ayarlarını silmeyin. Ardından OpenCode'u yeniden başlatın.
 `app_ping` yanıtında `version_match: false`, `script_location_match: false`
 veya dolu bir `stale_units` listesi varsa yüklenen script kopyasını kontrol edin.
 Eski `Altium_API.PrjScr` projesini kapatın, Altium'dan tamamen çıkın ve yeniden
-açın. Bu kurulumun `scripts` klasöründeki projeyi yükleyip `StartMCPServer`
-çalıştırın. Yalnızca aynı eski projede scripti tekrar başlatmak derleme
+açın. Bu kurulumun `scripts` klasöründeki projeyi kullanın. Korumalı menü modu
+kapalıysa `StartMCPServer`, etkinse yardımcının **Bağlantıyı başlat** işlemiyle
+bağlantıyı başlatın. Yalnızca aynı eski projede scripti tekrar başlatmak derleme
 önbelleğini yenilemeyebilir.
 
 `health` çıktısındaki `deployed scripts current` uyarısı, bu upstream sürümünde
@@ -145,8 +175,10 @@ olduğunu göstermez; `app_ping` ve açık kart bilgilerini ayrıca doğrulayın
   kartın PCB Editor'da yüklendiğini kontrol edin.
 - Birden fazla kart/uygulama oturumu açıksa test için tek hedef kartla tekrar
   deneyin.
-- Doğru MCP bağlantısını kullanın; gerekirse `get_board_info` çağrısında
-  `backend` değerini `altium` veya `kicad` olarak açıkça belirtin.
+- Doğru MCP bağlantısını kullanın; korumalı menü modu kapalıysa gerekirse
+  `get_board_info` çağrısında `backend` değerini `altium` veya `kicad` olarak
+  açıkça belirtin. Altium korumalı modunda hedef projeyi yardımcıdan seçin;
+  `get_board_info` yerine yukarıdaki bileşen/net kontrollerini kullanın.
 - Dönen kart adını açık belgeyle karşılaştırın. Sayıların eşleşmemesi durumunda
   tasarımı değiştiren araçları çalıştırmadan önce bağlantı seçimini düzeltin.
 
@@ -155,12 +187,27 @@ olduğunu göstermez; `app_ping` ve açık kart bilgilerini ayrıca doğrulayın
 Model sunucusunun erişilebilirliğini ve OpenCode sağlayıcı ayarlarını kontrol
 edin. Çevrimdışı bilgisayarda internet tabanlı model veya parça/datasheet arama
 işlemleri çalışmayabilir. Model hatasını EDA bağlantı hatasından ayırın;
-Altium'da salt okunur `app_ping` yerine model kullanmadan ek tanılama yapmak
-isterseniz `doctor` komutunun kaydetme davranışını dikkate alın.
+Altium'da model kullanmadan kontrol için yardımcının **Bağlantı durumu**
+işlemini kullanın. Bağımsız `doctor` komutuyla ek tanılama yapmak isterseniz
+kaydetme davranışını dikkate alın. Bağlam sınırı hataları için
+[MCP bağlam ayarını](mcp-context.md) inceleyin.
 
 ## Sorun Devam Ederse
 
 Hata alırsanız kullanılan backend'i, başarısız aracın adını ve hata mesajını
 kaydedin. Kurulum sürümünü, Altium/KiCad sürümünü, ping yanıtını ve varsa
-`doctor` çıktısını da ekleyin. Paylaşmadan önce çıktılardaki API anahtarlarını,
-kişisel yolları ve tasarım bilgilerini ayıklayın.
+`doctor` çıktısını da ekleyin. Kurulum/kaldırma sorunlarında günlükler
+`%LOCALAPPDATA%\EdaAgentOfflineSetup\Logs` klasöründedir. Altium yardımcısındaki
+**Log klasörünü aç** ile erişebilir veya **Logları masaüstüne kopyala** ile
+kurulum/kaldırma günlüklerini dışa aktarabilirsiniz. Bu günlükler canlı EDA
+bağlantısının kanıtı değildir; başarısız bağlantı kontrolünün çıktısını ayrıca
+kaydedin. Paylaşmadan önce çıktılardaki API anahtarlarını, kişisel yolları ve
+tasarım bilgilerini ayıklayın.
+
+Her iki paketin Başlat menüsündeki **Logs** kısayolu da günlük klasörünü açar.
+Ana konum yazılamazsa günlükler `%TEMP%\EdaAgentOfflineSetup\Logs` altına
+yazılır; hata mesajında gösterilen yolu kullanın. Kurulum ve kaldırma için ayrı,
+tarihli günlükler kaldırma sonrasında korunur. Günlükler aşama ve sayısal hata
+kodlarını içerir; yapılandırma içeriği, API anahtarları ve alt süreç çıktısı
+kaydedilmez. **Logları masaüstüne kopyala** yalnız bu tanı günlüklerini yeni bir
+klasöre kopyalar; EDA tasarımını veya tüm çalışma alanını toplamaz.

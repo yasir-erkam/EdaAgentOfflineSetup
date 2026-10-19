@@ -4,10 +4,18 @@ EDA Agent'ın `full` modu tüm araç açıklamalarını ve parametre şemaların
 istemcisine başlangıçta gönderir. Bunlar modelin bağlamını tüketir; konuşma
 geçmişi ve modelin yanıtı için de yer gerekir.
 
-Yeni paketlerin `launch.py` başlatıcısı varsayılan olarak `minimal` kullanır.
+0.1.4 ve sonraki paketlerin `launch.py` başlatıcısı, `EDA_AGENT_TOOLSET`
+önceden tanımlanmamışsa varsayılan olarak `minimal` kullanır. Mevcut bir `full`
+değerini otomatik değiştirmez.
 Model yalnız `tool_catalog` ve `tool_invoke` araçlarını görür. Diğer araçlar
 kaldırılmaz: model `tool_catalog(query="araç_adı", with_schema=true)` ile
 gereken parametreleri öğrenir, ardından `tool_invoke` ile çağırır.
+
+`app_ping`, `kicad_ping` veya diğer tasarım araçlarının istemcide ayrı ayrı
+listelenmemesi bu modda beklenir. Modele gereken aracı `tool_catalog` ile
+keşfedip `tool_invoke` üzerinden çalıştırmasını söyleyin. Gerçek EDA bağlantısı
+için [bağlantı doğrulama rehberini](baglanti-dogrulama.md) izleyin. `full` moda
+geçmek, isteğe bağlı Altium korumalı menü modunun araç kısıtlarını kaldırmaz.
 
 ## Mevcut kurulum için
 

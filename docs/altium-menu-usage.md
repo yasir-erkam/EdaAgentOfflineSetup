@@ -1,8 +1,11 @@
 # EDA Agent Altium menüsü — geliştirme sürümü
 
-Canlı Altium doğrulaması bekliyor. Bu özellik yayımlanmış 0.1.5 paketinde bulunmaz.
-Yeni kaynak koddan üretilen Altium paketinde isteğe bağlıdır; varsayılan olarak kapalıdır.
-KiCad paketine yerel menü adaptörü veya denetleyicisi eklenmez.
+Canlı Altium doğrulaması bekliyor. Bu belge kaynak ağacının **0.1.6** varsayılan
+kurulum sürümündeki isteğe bağlı özelliği anlatır; bu, yayımlanmış paket veya
+doğrulanmış Altium sürüm uyumluluğu iddiası değildir. Özellik varsayılan olarak
+kapalıdır; KiCad paketine yerel menü adaptörü veya denetleyicisi eklenmez.
+[Sürüm kapsamı](kullanim-kilavuzu.md#sürüm-kapsamı-ve-doğrulama-durumu) ve temel
+[kurulum adımları](kullanim-kilavuzu.md#2-kurulum) kullanım kılavuzundadır.
 
 ## Kurulum ve menüyü ekleme
 
@@ -92,4 +95,5 @@ değiştirilir. Kaynak dosyalarda değişiklik bildirimi ve farklı script sür�
 `offline-menu-patch.json` öncesi/sonrası hash'leri kaydeder. LICENSE/NOTICE korunur.
 Başka SourceCommit için menü overlay'i yeniden incelenmeden Altium paketi üretilmez.
 
-Canlı testler: [prototip kontrol listesi](altium-menu-prototype-checklist.md).
+Canlı testler: [depodaki prototip kontrol listesi](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/main/docs/gelistirici/altium-menu-prototype-checklist.md)
+(çevrimiçi geliştirici belgesi; çevrimdışı pakete dahil değildir).

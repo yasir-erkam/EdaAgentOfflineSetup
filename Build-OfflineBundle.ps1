@@ -58,10 +58,11 @@ if ($Backend -eq 'altium') {
     Invoke-Python -Arguments @((Join-Path $PSScriptRoot 'installer\apply_altium_menu.py'),
         "$runtime\Lib\site-packages\eda_agent\scripts", '--source-commit', $SourceCommit)
     Copy-Item "$PSScriptRoot\payload\altium\altium_menu.py" $bundle
-    $menuDocs = New-Item -ItemType Directory -Path "$bundle\docs" -Force
-    foreach ($name in @('altium-menu-usage.md', 'altium-menu-integration-plan.md', 'altium-menu-prototype-checklist.md')) {
-        Copy-Item (Join-Path $PSScriptRoot "docs\$name") $menuDocs.FullName
-    }
+}
+$bundleDocs = New-Item -ItemType Directory -Path (Join-Path $bundle 'docs') -Force
+Get-ChildItem (Join-Path $PSScriptRoot 'docs') -File | Where-Object Extension -in @('.md', '.pdf') | Copy-Item -Destination $bundleDocs.FullName
+if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'docs\images')) {
+    Copy-Item (Join-Path $PSScriptRoot 'docs\images') (Join-Path $bundleDocs.FullName 'images') -Recurse -Force
 }
 Copy-Item "$PSScriptRoot\Install-Offline.ps1", "$PSScriptRoot\Install.cmd", "$PSScriptRoot\README.md", "$PSScriptRoot\LICENSE" $bundle
 $notices = New-Item -ItemType Directory -Path "$bundle\upstream" -Force

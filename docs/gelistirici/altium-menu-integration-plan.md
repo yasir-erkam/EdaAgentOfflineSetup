@@ -6,7 +6,7 @@ Tarih: 16 Ekim 2026; depo kodu incelemesi sonrası güncellendi.
 
 Canlı deneme kullanıcı isteğiyle ertelendi. Yerel IPC ping probu ve disposable ortamda
 uygulanacak adımlar [prototip doğrulama listesinde](altium-menu-prototype-checklist.md)
-hazırlandı. Uygulamanın kapsam sınırları [menü kullanım belgesinde](altium-menu-usage.md).
+hazırlandı. Uygulamanın kapsam sınırları [menü kullanım belgesinde](../altium-menu-usage.md).
 Geçici workspace ile test edilen probe ürün entegrasyonu veya canlı
 Altium doğrulaması yerine geçmez.
 
