@@ -242,6 +242,10 @@ yanıtlarla sınar; Altium gerektirmez. Gerçek test ortamındaki yalnız ping k
 menü prototipi adımları [doğrulama listesinde](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/v0.1.6/docs/altium-menu-prototype-checklist.md)
 bulunur. Bu depo aracı kurulum paketine dahil değildir.
 
+Hedef bilgisayardaki Altium/KiCad bağlantısını sınamak için
+[bağlantı doğrulama rehberini](https://github.com/yasir-erkam/EdaAgentOfflineSetup/blob/main/docs/baglanti-dogrulama.md)
+izleyin.
+
 `tests\Test-OfflineBundle.ps1 -BundlePath '...\dist\EdaAgent-...'` geçici dizinde
 kurulum, ayar birleştirme, hata durumunda geri alma, CMD başlatıcı ve bozuk paket
 reddi kontrollerini çalıştırır. MCP bağlantısı dış ağ soketleri ve DNS erişimi
