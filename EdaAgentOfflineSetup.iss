@@ -130,8 +130,11 @@ Type: files; Name: "{app}\workspace\eda-menu-enabled"
 Type: files; Name: "{app}\workspace\eda-menu-state.json"
 Type: dirifempty; Name: "{app}\workspace\eda-menu-session.lock"
 #endif
+; Keep user files and unknown runtime data; remove only an empty workspace.
+Type: dirifempty; Name: "{app}\workspace"
 #include GeneratedFiles
 Type: dirifempty; Name: "{app}\scripts"
+Type: dirifempty; Name: "{app}"
 
 [Code]
 var
