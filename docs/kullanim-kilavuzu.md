@@ -20,7 +20,7 @@ uzun sürebilir. Tam kurulum akışı bu kılavuzda, tanılama adımları yalnı
 ## Sürüm kapsamı ve doğrulama durumu
 
 Bu kılavuzun temel aldığı kaynakta `Build-Installer.ps1` varsayılan kurulum
-sürümü **0.1.6**, `release-source.json` Python sürümü **3.13.16** ve upstream
+sürümü **0.1.7**, `release-source.json` Python sürümü **3.13.16** ve upstream
 EDA Agent commit'i **`f552f69175bea93c6f53571021852de43f05447f`** olarak kayıtlıdır.
 Kurulum sürümü, Python sürümü ve upstream commit birbirinden farklı bilgilerdir;
 bu değerler bir Release'in yayımlandığını kanıtlamaz. Elinizdeki paketin sürümünü
@@ -28,9 +28,10 @@ ve varsa `bundle.json` metadata dosyasını esas alın; eski paketlerde bu kayna
 ağacındaki seçenekler bulunmayabilir.
 
 Gerçek Altium/KiCad bağlantısı hedef bilgisayarda doğrulanmalıdır. İsteğe bağlı
-Altium menüsünün canlı sürüm uyumluluğu ve davranışı henüz doğrulanmadı;
-menü modu varsayılan olarak kapalıdır. Aşağıdaki yardımcı başlangıç ekranı
-arayüzü gösterir; başarılı canlı EDA bağlantısının kanıtı değildir.
+Altium menüsünün canlı sürüm uyumluluğu ve davranışı, **26.7.1 dahil**, henüz
+doğrulanmadı; menü modu varsayılan olarak kapalıdır. Bu, ilgili Altium sürümünün
+bulunmadığı anlamına gelmez. Aşağıdaki yardımcı başlangıç ekranı yalnız arayüzü
+gösterir; başarılı canlı EDA bağlantısının kanıtı değildir.
 
 ## 1. Gereksinimler ve paket seçimi
 
@@ -66,8 +67,12 @@ uygulamanıza uygun bölümü izleyin:
 
 - [Altium Designer](baglanti-dogrulama.md#altium-designer): PCB'yi açın ve
   **EDA Agent for Altium → Altium Bağlantı Yardımcısı** üzerinden bağlantıyı
-  başlatın. Korumalı menü modu açıksa hedef proje seçimi ve farklı okuma
-  araçları gerekir.
+  başlatın. İsteğe bağlı Altium menüsündeki mevcut açma komutu aynı yardımcıyı
+  işlemsiz açar; `Altium-Menu-Commands.txt` ile elle eklenen doğrudan Başlat/Durum/Kes/
+  Yeniden bağlan girişleri ise bağlama başarılı olduktan sonra ilgili işlemi bir kez
+  uygular. Otomatik menü kaydı yoktur. Korumalı modda yardımcı çağıran oturuma bağlanır; tek hedef
+  proje seçimi ve farklı okuma araçları gerekir. Başlatma/yeniden bağlanma için
+  yalnız bir Altium süreci açık olmalıdır.
 - [KiCad](baglanti-dogrulama.md#kicad): KiCad 9+ PCB Editor'da kart açıp
   **Preferences → Plugins → KiCad API server** seçeneğini etkinleştirin.
   Altium scripti veya yardımcısı gerekmez.
@@ -76,8 +81,8 @@ uygulamanıza uygun bölümü izleyin:
 
 *Gerçek bağlantı yardımcısının geçici bir klasörde açılmış başlangıç ekranı;
 menü modu kapalıdır. Bu görüntü başarılı EDA bağlantısının kanıtı değildir.
-Bu belge hazırlığında çalışan Altium/KiCad oturumu bulunmadığından başarılı
-bağlantı veya KiCad API ayarı ekran görüntüsü sunulmuyor.*
+Bu önceki arayüz görüntüsü başarılı bağlantı veya güncel native menü açılışının
+kanıtı değildir; başarılı canlı EDA bağlantısı ekran görüntüsü sunulmuyor.*
 
 OpenCode'u yeniden başlatın; ilgili rehberdeki salt okunur istekleri gönderin.
 Ping yanıtı ve açık PCB'nin bilgileri eşleşmelidir; yalnız MCP'nin bağlı

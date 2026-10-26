@@ -1,9 +1,10 @@
 # EDA Agent Altium menüsü — geliştirme sürümü
 
-Canlı Altium doğrulaması bekliyor. Bu belge kaynak ağacının **0.1.6** varsayılan
-kurulum sürümündeki isteğe bağlı özelliği anlatır; bu, yayımlanmış paket veya
-doğrulanmış Altium sürüm uyumluluğu iddiası değildir. Özellik varsayılan olarak
-kapalıdır; KiCad paketine yerel menü adaptörü veya denetleyicisi eklenmez.
+Canlı Altium doğrulaması, **26.7.1 dahil**, bekliyor; bu sürümün bulunmadığı veya
+uyumsuz olduğu sonucu çıkarılamaz. Bu belge kaynak ağacının **0.1.7** varsayılan
+kurulum sürümündeki isteğe bağlı özelliği anlatır; yayımlanmış paket veya
+doğrulanmış sürüm uyumluluğu iddiası değildir. Özellik varsayılan olarak
+kapalıdır; KiCad paketine Altium menü adaptörü veya denetleyicisi eklenmez.
 [Sürüm kapsamı](kullanim-kilavuzu.md#sürüm-kapsamı-ve-doğrulama-durumu) ve temel
 [kurulum adımları](kullanim-kilavuzu.md#2-kurulum) kullanım kılavuzundadır.
 
@@ -14,11 +15,25 @@ kapalıdır; KiCad paketine yerel menü adaptörü veya denetleyicisi eklenmez.
 2. Kurulum dizinindeki **Altium-Menu-Commands.txt** dosyasını açın. Kurucu profil
    dosyalarına yazmaz; kayıt durumu `pending-user-registration` olarak kalır.
 3. Altium'da kullanacağınız editörü açın. **View > Toolbars > Customize > New** ile
-   `ScriptingSystem:RunScript` komutu oluşturun. Dosyadaki Parameters değerini
-   kopyalayın; Caption olarak **EDA Agent** girip menüye veya araç çubuğuna sürükleyin.
-4. Komut `MenuForm.pas>ShowEdaAgentMenu` prosedürünü çalıştırır ve beş işlemi içeren
-   TR/EN kontrol penceresini açar. Şematik/PCB gibi her editör için gerekirse aynı
-   komutu ayrı ekleyin. Menü düğmesi/kısayol da aynı pencereyi açar.
+   her giriş için ayrı bir `ScriptingSystem:RunScript` komutu oluşturun. Aşağıdaki
+   beş girişin Caption ve Parameters değerlerini kurulumun ürettiği
+   **Altium-Menu-Commands.txt** dosyasından kopyalayın; menüye veya araç çubuğuna
+   sürükleyin. Parameters içindeki kurulum yolunu elle tahmin etmeyin.
+
+| Elle eklenecek giriş | `ConnectionAssistant.pas` prosedürü | Açılıştaki işlem |
+| --- | --- | --- |
+| EDA Agent | `ShowConnectionAssistant` | Yalnız yardımcıyı açar ve çağıran oturuma bağlar; bağlantıyı başlatmaz. Mevcut Customize girişini koruyabilirsiniz. |
+| Bağlantıyı başlat | `StartConnectionAssistant` | Bağlama başarılı olduktan sonra Başlat işlemini bir kez çalıştırır. |
+| Bağlantı durumu | `StatusConnectionAssistant` | Bir kez durum sorgular; durmuş köprüyü başlatmaz. |
+| Bağlantıyı kes | `DisconnectConnectionAssistant` | Bir kez güvenli kesme ister; kaydetmez, Altium'u/projeleri kapatmaz. |
+| Yeniden bağlan | `ReconnectConnectionAssistant` | Güvenli kesmenin onayından sonra yeniden başlatır. |
+
+4. Beş giriş de Başlat menüsünden açılan aynı dış **Altium Bağlantı Yardımcısı**
+   (`Connection-Assistant.ps1`) penceresini kullanır; ikinci bir native Altium
+   kontrol arayüzü oluşturulmaz. Doğrudan işlem, çağıran script ve köprü oturumu
+   doğrulandıktan sonra bir kez yürütülür; bağlama başarısızsa işlem yapılmaz.
+   Şematik/PCB gibi her editör için gerekirse bu komutları ayrı ekleyin. Kurucu
+   bu beş komutu otomatik kaydetmez; çoklu proje/oturum yönetimi eklenmez.
 
 Yöntem [resmi Altium komut özelleştirmesine](https://www.altium.com/documentation/altium-designer/scripting/running-scripts)
 dayanır. Sürüm uyumluluğu, yeniden açılışta kalıcılık ve ekran görüntüleri canlı
@@ -28,11 +43,11 @@ Altium ile henüz doğrulanmadı. Kurulum “menü otomatik eklendi” sonucu ve
 
 | İşlem | Davranış |
 | --- | --- |
-| Bağlantıyı başlat | Çağıran oturumda pompayı başlatır. Dış yardımcıdan başlatmak için tek açık Altium oturumu gerekir; başlatma sonrası yanıt kontrol edilir. |
-| Bağlantı durumu | Belge kaydetmeden durumu, seçili projeyi ve odaktaki belgeyi gösterir. OpenCode istemcisinin bağlı olduğunu kanıtlamaz. |
-| Hedef proje | Aynı oturumdaki açık `.PrjPcb` projelerini tam yollarıyla listeler. Script projesi listelenmez. Seçim oturum süresince tutulur. |
-| Bağlantıyı kes | Kaydetme komutu göndermeden pompayı durdurur. Altium ve projeler açık kalır. Dış yardımcı sonlandırmanın tamamlandığını bekler. |
-| Yardım ve sorun giderme | Elle kayıt/kaldırma, desteklenen kapsam ve yeniden bağlanma adımlarını sunar. Dış yardımcıda Yeniden bağlan yalnız bu bölümde görünür. |
+| Bağlantıyı başlat | Tek açık Altium süreci doğrulandıktan ve çağıran script bağlamı denetlendikten sonra pompayı başlatır. Başlatma sonrası aynı çağıranın yeni oturum yanıtı doğrulanır. |
+| Bağlantı durumu | Bağlı oturumun durumunu, seçili projeyi ve odaktaki belgeyi kaydetmeden gösterir. OpenCode istemcisinin bağlı olduğunu kanıtlamaz. |
+| Hedef proje | Bağlı oturumdaki açık `.PrjPcb` projelerini tam yollarıyla listeler. Script projesi listelenmez. Tek hedef seçilir; seçim köprü oturumu süresince tutulur. |
+| Bağlantıyı kes | Kaydetme komutu göndermeden bağlı pompayı durdurur ve aynı oturumun sonlandırılmasını bekler. Altium ve projeler açık kalır. |
+| Yardım ve sorun giderme | Elle kayıt/kaldırma, desteklenen kapsam ve yeniden bağlanma adımlarını sunar. **Yeniden bağlan** burada görünür; güvenli kesme doğrulanmadan başlatmaz. |
 
 Bağlantı yardımcısı artık `doctor` yerine salt okunur kontrol kullanır. Menü modu
 kapalıysa yardımcıda Başlat/Durum/Yardım kullanılabilir; hedef seçme ve güvenli kesme
@@ -60,9 +75,16 @@ değiştirmez; başka projeye odaklanıldığında işlem reddedilir. Yeni hedef
 bekleyen istekleri geçersiz kılar. Oturum yeniden başlayınca hedef seçimi sıfırlanır.
 Korumalı modda Python UI otomasyonu ve web panosu kapatılır.
 
-Native pencerede çalışan handler sırasında hedef değiştirme/kesme isteği reddedilir;
-dış yardımcıdan gelen kontrol isteği pompa tarafından sıralı işlenir. Zaman aşımı
+Yardımcıdan gelen kontrol istekleri pompa tarafından sıralı işlenir. Zaman aşımı
 başarı veya bağlantının kesildiği anlamına gelmez; zorla süreç sonlandırılmaz.
+
+Başlat menüsünden açılan yardımcı, korumalı modda önce tek Altium sürecini
+doğrulayıp bu kurulumun scriptinden çağıran kimliğini edinir. Başlatma/yeniden
+bağlanma süreç kimliği ve oluşturulma zamanı ile denetlenir; birden fazla Altium
+süreci varsa görünür pencereye veya ilk sürece göre seçim yapılmaz. Başka workspace,
+başka çağıran bağlamı veya yeniden başlamış bir köprü oturumu sessizce benimsenmez.
+Eski yardımcı hata verirse doğru Altium oturumundaki menüden yeniden açın; durum
+kontrolü eski pencereyi başka oturuma bağlamaz. Bu, çoklu proje/oturum yönetimi değildir.
 
 ## Oturum kilidi ve kurtarma
 
@@ -73,11 +95,41 @@ kapattıktan sonra yalnız bu boş klasörü kaldırın. Eski veya başka kurulu
 köprüsünü eşzamanlı çalıştırmayın; upstream işaretçisi hâlâ makine genelindedir.
 Çoklu oturum canlı testleri bekliyor.
 
+Başlatma onayı alınamazsa `workspace/eda-assistant-launch.lock` korunabilir.
+Süresi geçmiş başlatma niyeti reddedilir; işlemi körlemesine yinelemeyin veya
+çalışan Altium varken bu kilidi silmeyin. Yalnız **tüm Altium oturumları kapalıyken**
+bu başlatma kilidini ve içindeki artık niyet/yanıt dosyalarını kaldırıp yardımcıyı
+yeniden açın. Bu kilit, pompanın `eda-menu-session.lock` kilidinden ayrıdır.
+
 ## Güncelleme, kaldırma ve sessiz kurulum
 
-Kurulum yolu değişirse Altium Customize içindeki Parameters yolunu güncelleyin.
-Kaldırmadan önce yalnız EDA Agent komutunu Customize üzerinden silin; **Restore**
-kullanmayın. Kurucu elle oluşturulan profil kaydını sahiplenmez veya otomatik silmez.
+`Start connection` sırasında bildirilen `variable <edamenucounter> not defined`
+hatası için `offline-assistant1`, `EdaMenuCounter` tanımını üretilen `Main.pas` yerine
+`StatusForm.pas` içine gömülen `MenuControl.pas` dosyasına taşır; tüm sayaç erişimleri
+aynı birimde kalır. Önceki yalnız `Inc` yerine normal atama değişikliği birimler arası
+sayaç erişimini kaldırmıyordu. Kök neden ve sonuç canlı Altium'da henüz doğrulanmadı.
+
+Yalnız kaynak kod değişikliği kurulu scriptleri veya önceden üretilmiş EXE'leri
+güncellemez; `offline-assistant1` içeren yeni paket kullanın. Yeniden üretmek için depo
+kökünde `release-source.json` içindeki sabitlenmiş sürümleri kullanın:
+
+```powershell
+$config = Get-Content .\release-source.json -Raw | ConvertFrom-Json
+.\Build-OfflineBundle.ps1 -Backend altium -SourceCommit $config.sourceCommit -PythonVersion $config.pythonVersion
+.\Build-Installer.ps1 -Backend altium
+```
+
+Yeniden kurmadan önce tüm Altium oturumlarını kapatın. Ardından kurulu
+`Altium_API.PrjScr` projesini kapatıp yeniden açın; eski derlenmiş birimler kullanılıyorsa
+önbelleği temizlemek için Altium'u yeniden başlatın. Mevcut elle eklenmiş komutta
+eski `MenuForm.pas>ShowEdaAgentMenu` yerine kurulumun güncel
+`Altium-Menu-Commands.txt` Parameters değerini kullanın; yol değişmese de giriş
+prosedürü değişmiştir. Eski workspace kilidi için
+[Oturum kilidi ve kurtarma](#oturum-kilidi-ve-kurtarma) bölümüne bakın; yalnız tüm
+Altium oturumları kapalıyken boş `workspace/eda-menu-session.lock` klasörünü kaldırın.
+
+Kaldırmadan önce elle eklediğiniz EDA Agent girişlerini Customize üzerinden tek tek
+silin; **Restore** kullanmayın. Kurucu profil kayıtlarını sahiplenmez veya otomatik silmez.
 Korumalı menü kurulumu kaldırılırken açık Altium süreci varsa kaldırma durur.
 
 Yeniden kurulum sahiplik kimliğini ve tanımadığı setup-state alanlarını korur.

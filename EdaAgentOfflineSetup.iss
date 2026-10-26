@@ -2,7 +2,7 @@
   #error Build using Build-Installer.ps1
 #endif
 #ifndef SetupVersion
-  #define SetupVersion "0.1.6"
+  #define SetupVersion "0.1.7"
 #endif
 #if Backend == "altium"
   #define ProductName "EDA Agent for Altium"

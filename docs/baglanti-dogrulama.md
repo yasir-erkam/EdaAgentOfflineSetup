@@ -22,7 +22,12 @@ başarılı bir canlı Altium/KiCad denemesi yapıldığı iddiası değildir.
 
 1. Altium'u açıp bir PCB belgesi yükleyin.
 2. Başlat menüsünden **EDA Agent for Altium → Altium Bağlantı Yardımcısı**
-   uygulamasını açın.
+   uygulamasını açın. İsteğe bağlı elle eklenmiş **EDA Agent** menüsü de aynı dış
+   yardımcıyı işlemsiz açar; ayrı Altium kontrol formu yoktur. Kurulumun
+   `Altium-Menu-Commands.txt` dosyasındaki diğer dört Customize girişi Başlat/Durum/
+   Kes/Yeniden bağlan işlemini başarılı oturum bağlamasından sonra bir kez uygular.
+   Bunlar elle eklenir; Durum durmuş köprüyü başlatmaz. Canlı Altium 26.7.1
+   uyumluluğu bu fixture testleriyle doğrulanmış değildir.
 3. **Bağlantıyı başlat** düğmesine basın. Ardından **Bağlantı durumu** ile
    köprünün yanıt verdiğini kontrol edin. Bu kontrol belge kaydetmez; tek başına
    OpenCode bağlantısını doğrulamaz.
@@ -30,6 +35,14 @@ başarılı bir canlı Altium/KiCad denemesi yapıldığı iddiası değildir.
    listesini yenileyin, hedef `.PrjPcb` projesini seçip **Hedef proje…** düğmesine
    basın. Bu projeye ait PCB belgesini odakta tutun. Menü desteği kapalıysa
    hedef seçimi etkin değildir.
+
+Korumalı modda yardımcı çağıran script bağlamına ve çalışan köprü oturumuna
+bağlanır. Başlat menüsünden kimlik edinme, başlatma ve yeniden bağlanma için
+yalnız bir Altium süreci açık olmalıdır; görünür pencere/ilk süreç tahmini yapılmaz.
+Başka workspace veya eski/yeniden başlamış oturum hatasında yardımcıyı doğru
+Altium oturumunun menüsünden yeniden açın. **Yeniden bağlan**, Yardım bölümünden
+erişilir ve kaydetmeyen kesmenin tamamlandığı doğrulanmadan başlatmaz.
+Canlı menü açılışı ve oturum bağı, Altium **26.7.1 dahil**, henüz doğrulanmadı.
 
 **Tanılama ve kaydetme:** Bağımsız `doctor` komutu, `application.save_all`
 kontrolünü de çalıştırır; açık Altium belgelerini kaydedebilir. Kaydedilmemiş

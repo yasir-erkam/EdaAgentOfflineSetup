@@ -104,6 +104,8 @@ jobs:
           ./tests/Test-OfflineBundle.ps1 -BundlePath $altium
           ./tests/Test-SetupLogging.ps1
           ./tests/Test-AltiumMenuSetup.ps1 -BundlePath $altium
+          ./tests/Test-UninstallWorkspace.ps1
+          ./tests/Test-ConnectionAssistant.ps1 -RuntimePath "$altium\runtime"
           ./tests/Test-SetupWizard.ps1 -InstallerPath "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe"
           ./tests/Test-SeparatePackages.ps1 -AltiumInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-altium.exe" -KiCadInstaller "dist/EdaAgentOfflineSetup-$env:SETUP_VERSION-kicad.exe"
 
