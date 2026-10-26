@@ -24,9 +24,15 @@ try {
     $state = Get-Content "$working\setup-state.json" -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($state.schemaVersion -ne 2 -or $state.futureField -ne 'preserve' -or
         $state.altiumMenu.status -ne 'pending-user-registration' -or $state.altiumMenu.profileModified) { throw 'Invalid menu state migration.' }
-    if (-not (Test-Path "$working\scripts\MenuForm.pas") -or -not (Test-Path "$working\workspace\eda-menu-enabled")) { throw 'Menu files were not prepared.' }
+    if (-not (Test-Path "$working\scripts\ConnectionAssistant.pas") -or -not (Test-Path "$working\workspace\eda-menu-enabled")) { throw 'Menu files were not prepared.' }
     $commands = [IO.File]::ReadAllText("$working\Altium-Menu-Commands.txt", [Text.Encoding]::UTF8)
-    if (-not $commands.Contains($working + '\scripts\Altium_API.PrjScr')) { throw 'Command file has the wrong script path.' }
+    $parameterLines = @($commands -split '\r?\n' | Where-Object { $_.StartsWith('Parameters: ') })
+    $expectedProcedures = @('ShowConnectionAssistant', 'StartConnectionAssistant', 'StatusConnectionAssistant', 'DisconnectConnectionAssistant', 'ReconnectConnectionAssistant')
+    if ($parameterLines.Count -ne $expectedProcedures.Count) { throw 'Command file must expose exactly five manual commands.' }
+    foreach ($procedure in $expectedProcedures) {
+        $expected = 'Parameters: ProjectName=' + $working + '\scripts\Altium_API.PrjScr|ProcName=ConnectionAssistant.pas>' + $procedure
+        if (@($parameterLines | Where-Object { $_ -eq $expected }).Count -ne 1) { throw "Missing or duplicate manual command: $procedure" }
+    }
     $owner = $state.altiumMenu.installationId
     # Omitting the option preserves an earlier manually registered integration.
     & "$working\Install-Offline.ps1" -BundlePath $working -InstallDir $working -ConfigureExisting

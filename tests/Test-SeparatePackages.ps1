@@ -64,7 +64,7 @@ try {
     if (-not (Test-Path "$($locations.altium)\Connection-Assistant.ps1") -or -not (Test-Path "$($locations.altium)\scripts\Altium_API.PrjScr")) { throw 'Altium assistant or scripts missing.' }
     if ((Test-Path "$($locations.kicad)\Connection-Assistant.ps1") -or (Test-Path "$($locations.kicad)\scripts")) { throw 'KiCad deployed Altium helpers.' }
     if ((Test-Path "$($locations.kicad)\altium_menu.py") -or
-        (Test-Path "$($locations.kicad)\runtime\Lib\site-packages\eda_agent\scripts\MenuForm.pas")) { throw 'KiCad contains local Altium menu helpers.' }
+        (Test-Path "$($locations.kicad)\runtime\Lib\site-packages\eda_agent\scripts\ConnectionAssistant.pas")) { throw 'KiCad contains local Altium menu helpers.' }
     foreach ($backend in @('kicad', 'altium')) {
         $location = $locations[$backend]
         $process = Start-Process -FilePath "$location\unins000.exe" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + "$testRoot\uninstall-$backend.log" + '"')) -WindowStyle Hidden -PassThru -Wait

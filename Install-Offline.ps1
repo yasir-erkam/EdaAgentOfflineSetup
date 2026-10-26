@@ -101,6 +101,7 @@ try {
             }
             if ($manifest.backend -eq 'altium') {
                 Copy-Item -LiteralPath (Join-Path $BundlePath 'altium_menu.py') -Destination $InstallDir
+                Copy-Item -LiteralPath (Join-Path $BundlePath 'Connection-Assistant.ps1') -Destination $InstallDir
             }
         }
         Write-SetupLog -Path $LogPath -Event configuring
@@ -146,13 +147,32 @@ try {
             $commands = @(
                 'EDA Agent - Altium menu / menu kurulumu',
                 'View > Toolbars > Customize > New',
-                'Process: ScriptingSystem:RunScript',
-                ('Parameters: ProjectName=' + $InstallDir + '\scripts\Altium_API.PrjScr|ProcName=MenuForm.pas>ShowEdaAgentMenu'),
-                'Caption: EDA Agent',
-                'Drag this command to a menu or toolbar. Repeat for each editor you use.',
-                'Bu komutu menuye/arac cubuguna surukleyin; kullandiginiz her editor icin tekrarlayin.',
-                'Remove only this custom command in Customize before uninstall. Never use Restore.',
-                'Kaldirmadan once Customize icinde yalniz bu komutu silin. Restore kullanmayin.',
+                'Add each desired command separately with Process: ScriptingSystem:RunScript. No profile or menu is changed automatically.',
+                'Istenen her komutu ayri ekleyin: Process: ScriptingSystem:RunScript. Profil/menu otomatik degistirilmez.'
+            )
+            foreach ($entry in @(
+                @{ Procedure = 'ShowConnectionAssistant'; Caption = 'EDA Agent - Connection Assistant / Baglanti Yardimcisi'; Detail = 'Open only; does not start the bridge / Yalniz acar; kopruyu baslatmaz.' },
+                @{ Procedure = 'StartConnectionAssistant'; Caption = 'EDA Agent - Start / Baslat'; Detail = 'Start and show the result / Baslatir ve sonucu gosterir.' },
+                @{ Procedure = 'StatusConnectionAssistant'; Caption = 'EDA Agent - Status / Durum'; Detail = 'Check only; never starts a stopped bridge / Yalniz kontrol eder; duran kopruyu baslatmaz.' },
+                @{ Procedure = 'DisconnectConnectionAssistant'; Caption = 'EDA Agent - Disconnect / Baglantiyi kes'; Detail = 'Disconnect without saving; projects remain open / Kaydetmeden keser; projeler acik kalir.' },
+                @{ Procedure = 'ReconnectConnectionAssistant'; Caption = 'EDA Agent - Reconnect / Yeniden baglan'; Detail = 'Start only after confirmed safe stop / Yalniz guvenli durdurma dogrulandiktan sonra baslatir.' }
+            )) {
+                $commands += @(
+                    '',
+                    ('Caption: ' + $entry.Caption),
+                    'Process: ScriptingSystem:RunScript',
+                    ('Parameters: ProjectName=' + $InstallDir + '\scripts\Altium_API.PrjScr|ProcName=ConnectionAssistant.pas>' + $entry.Procedure),
+                    $entry.Detail
+                )
+            }
+            $commands += @(
+                '',
+                'Drag each command to a menu or toolbar. Repeat for each editor you use.',
+                'Her komutu menuye/arac cubuguna surukleyin; kullandiginiz her editor icin tekrarlayin.',
+                'All results and errors appear in the same external Connection Assistant.',
+                'Tum sonuclar ve hatalar ayni harici Baglanti Yardimcisinda gosterilir.',
+                'Remove only these custom commands in Customize before uninstall. Never use Restore.',
+                'Kaldirmadan once Customize icinde yalniz bu ozel komutlari silin. Restore kullanmayin.',
                 'Guarded mode: pcb.get_components, pcb.get_nets, pcb.batch_move_components only. Other design commands are refused.',
                 'Canli Altium dogrulamasi bekliyor / Live Altium validation pending.'
             )
@@ -205,7 +225,7 @@ try {
     Write-Host "OpenCode MCP settings: $InstallDir\opencode.mcp.json"
     if ($manifest.backend -eq 'altium') {
         Write-Host "In Altium: Preferences > Scripting System > Global Projects > Install from file > $InstallDir\scripts\Altium_API.PrjScr"
-        Write-Host 'Then: File > Run Script > Dispatcher.pas > StartMCPServer > Run'
+        Write-Host 'Then: File > Run Script > ConnectionAssistant.pas > ShowConnectionAssistant > Run'
     } else {
         Write-Host 'In KiCad 9+: Preferences > Plugins > enable KiCad API server.'
     }

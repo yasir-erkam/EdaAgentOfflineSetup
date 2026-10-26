@@ -58,6 +58,7 @@ if ($Backend -eq 'altium') {
     Invoke-Python -Arguments @((Join-Path $PSScriptRoot 'installer\apply_altium_menu.py'),
         "$runtime\Lib\site-packages\eda_agent\scripts", '--source-commit', $SourceCommit)
     Copy-Item "$PSScriptRoot\payload\altium\altium_menu.py" $bundle
+    Copy-Item "$PSScriptRoot\installer\Connection-Assistant.ps1" $bundle
 }
 $bundleDocs = New-Item -ItemType Directory -Path (Join-Path $bundle 'docs') -Force
 Get-ChildItem (Join-Path $PSScriptRoot 'docs') -File | Where-Object Extension -in @('.md', '.pdf') | Copy-Item -Destination $bundleDocs.FullName

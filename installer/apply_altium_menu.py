@@ -31,17 +31,17 @@ def apply(scripts, overlay, commit):
         if digest(originals[name]) != expected:
             raise ValueError(f"Unrecognized upstream file; no patch applied: {name}")
     additions = {name: (overlay / name).read_bytes() for name in
-                 ("MenuControl.pas", "MenuForm.pas", "MenuForm.dfm")}
+                 ("MenuControl.pas", "ConnectionAssistant.pas")}
     main = originals["Main.pas"].decode("utf-8-sig").replace("\r\n", "\n")
     main = replace_once(main, "    WorkspaceDir : String;", """    EdaMenuEnabled : Boolean;
     EdaMenuTarget : String;
     EdaMenuRevision : String;
     EdaMenuSession : String;
-    EdaMenuCounter : Integer;
+    EdaMenuCaller : String;
     EdaMenuOwnsLease : Boolean;
     WorkspaceDir : String;""")
     main = replace_once(main, "SCRIPT_VERSION = '2026.10.14.7';",
-                        "SCRIPT_VERSION = '2026.10.14.7.offline-menu2';")
+                        "SCRIPT_VERSION = '2026.10.14.7.offline-assistant1';")
     # Reuse upstream's BOM-aware, sharing-safe reader for Unicode pointer paths.
     # Move the resolver below ReadFileContent: DelphiScript has no forward declarations.
     resolver_start = main.index("Function ResolveDefaultWorkspaceDir(Dummy : Integer): String;")
@@ -76,16 +76,13 @@ def apply(scripts, overlay, commit):
     status = '{ Modified by EdaAgentOfflineSetup: local menu dispatch and lifecycle, 2026-10-16. }\n' + status
     project = originals["Altium_API.PrjScr"].decode("utf-8-sig").replace("\r\n", "\n")
     project = replace_once(project, "[Document1]\n", """[Document14]
-DocumentPath=MenuForm.pas
-
-[Document15]
-DocumentPath=MenuForm.dfm
+DocumentPath=ConnectionAssistant.pas
 
 [Document1]
 """)
     outputs = {"Main.pas": main.encode("utf-8"), "StatusForm.pas": status.encode("utf-8"),
                "Altium_API.PrjScr": project.encode("utf-8"),
-               "MenuForm.pas": additions["MenuForm.pas"], "MenuForm.dfm": additions["MenuForm.dfm"]}
+               "ConnectionAssistant.pas": additions["ConnectionAssistant.pas"]}
     manifest = {
         "schemaVersion": 1, "sourceCommit": commit,
         "patcherSha256": digest(Path(__file__).read_bytes()),

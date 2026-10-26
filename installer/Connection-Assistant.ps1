@@ -1,4 +1,9 @@
-﻿param([ValidateSet('turkish', 'english')][string]$Language = 'turkish')
+﻿param(
+    [ValidateSet('turkish', 'english')][string]$Language = 'turkish',
+    [string]$CallerId = '',
+    [string]$SessionId = '',
+    [ValidateSet('Show', 'Start', 'Status', 'Disconnect', 'Reconnect')][string]$Action = 'Show'
+)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 Add-Type -AssemblyName System.Windows.Forms
@@ -9,6 +14,10 @@ function Text-For([string]$Turkish, [string]$English) { if ($tr) { $Turkish } el
 $root = $PSScriptRoot
 . (Join-Path $root 'setup_logging.ps1')
 $script:pending = $null
+$script:callerId = $CallerId
+$script:sessionId = $SessionId
+$script:processIdentity = ''
+$script:queuedAction = if ($Action -eq 'Show') { '' } else { $Action.ToLowerInvariant() }
 $form = New-Object Windows.Forms.Form
 $form.Text = Text-For 'EDA Agent - Bağlantı Yardımcısı' 'EDA Agent - Connection Assistant'
 $form.ClientSize = New-Object Drawing.Size(900, 690)
@@ -88,6 +97,10 @@ function Set-Controls([bool]$Enabled) {
 
 function Invoke-Menu([string]$Command, [string]$Project = '') {
     if ($null -ne $script:pending) { return }
+    if ($Command -ne 'prepare' -and -not $script:processIdentity) {
+        $script:queuedAction = $Command
+        $Command = 'prepare'
+    }
     Set-Controls $false
     $output.Text = Text-For 'İşlem sürüyor…' 'Working…'
     try {
@@ -95,6 +108,9 @@ function Invoke-Menu([string]$Command, [string]$Project = '') {
         $info.FileName = Join-Path $root 'runtime\python.exe'
         $info.Arguments = '-X utf8 "' + (Join-Path $root 'altium_menu.py') + '" ' + $Command
         if ($Project) { $info.Arguments += ' --project "' + $Project + '"' }
+        if ($script:callerId) { $info.Arguments += ' --caller-id "' + $script:callerId + '"' }
+        if ($script:sessionId) { $info.Arguments += ' --session-id "' + $script:sessionId + '"' }
+        if ($script:processIdentity) { $info.Arguments += ' --process-identity "' + $script:processIdentity + '"' }
         $info.UseShellExecute = $false
         $info.CreateNoWindow = $true
         $info.RedirectStandardOutput = $true
@@ -106,6 +122,7 @@ function Invoke-Menu([string]$Command, [string]$Project = '') {
         [void]$process.Start()
         $script:pending = @{ Process = $process; Output = $process.StandardOutput.ReadToEndAsync(); Error = $process.StandardError.ReadToEndAsync(); Command = $Command }
     } catch {
+        $script:queuedAction = ''
         $output.Text = $_.Exception.Message
         Set-Controls $true
     }
@@ -117,17 +134,29 @@ $timer.Add_Tick({
     if ($null -eq $script:pending -or -not $script:pending.Process.HasExited) { return }
     $operation = $script:pending
     $script:pending = $null
+    $nextAction = ''
     try {
         $raw = $operation.Output.Result
         $stderr = $operation.Error.Result
         $data = $raw | ConvertFrom-Json
         if ($operation.Process.ExitCode -ne 0) {
             $output.Text = (Text-For 'İşlem doğrulanamadı: ' 'Operation was not confirmed: ') + $data.error + "`r`n" + $stderr
+            $script:queuedAction = ''
+        } elseif ($operation.Command -eq 'prepare') {
+            if (-not $data.process_identity) { throw 'Altium process identity was not confirmed.' }
+            $script:callerId = [string]$data.caller_id
+            $script:sessionId = [string]$data.session_id
+            $script:processIdentity = [string]$data.process_identity
+            $output.Text = Text-For 'Altium oturumu bağlandı. Başlat veya bağlantı durumu seçin.' 'Altium session bound. Choose Start or Connection status.'
+            $nextAction = $script:queuedAction
+            $script:queuedAction = ''
         } elseif ($operation.Command -eq 'disconnect') {
             $projects.Items.Clear()
             $output.Text = Text-For 'Bağlantı kesildi. Belgeler kaydedilmedi; projeler açık bırakıldı.' 'Disconnected. Documents were not saved; projects were left open.'
         } else {
             $projects.Items.Clear()
+            if ($data.PSObject.Properties['caller_id']) { $script:callerId = [string]$data.caller_id }
+            if ($data.PSObject.Properties['session_id']) { $script:sessionId = [string]$data.session_id }
             if ($data.PSObject.Properties['projects']) { foreach ($path in $data.projects) { [void]$projects.Items.Add([string]$path) } }
             $selected = if ($data.PSObject.Properties['target_project']) { [string]$data.target_project } else { '' }
             $projects.SelectedIndex = $projects.Items.IndexOf($selected)
@@ -140,8 +169,12 @@ $timer.Add_Tick({
                 (Text-For 'Kontrol zamanı: ' 'Checked at: ') + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + "`r`n" +
                 (Text-For 'OpenCode bağlantısı bu kontrolle doğrulanmaz. Proje listesini yenilemek için Bağlantı durumu seçin.' 'This check does not verify the OpenCode connection. Refresh Connection status to reload projects.')
         }
-    } catch { $output.Text = $_.Exception.Message + "`r`n" + $operation.Output.Result }
+    } catch {
+        $script:queuedAction = ''
+        $output.Text = $_.Exception.Message + "`r`n" + $operation.Output.Result
+    }
     finally { $operation.Process.Dispose(); Set-Controls $true }
+    if ($nextAction) { Invoke-Menu $nextAction }
 })
 $timer.Start()
 $start.Add_Click({ Invoke-Menu 'start' })
@@ -158,6 +191,7 @@ $help.Add_Click({
 $form.Add_FormClosing({ param($sender, $eventArgs) if ($null -ne $script:pending) { $eventArgs.Cancel = $true } })
 Set-Controls $true
 $output.Text = Text-For 'Başlat veya bağlantı durumu işlemini seçin. Menü kaydı elle tamamlanır.' 'Choose Start or Connection status. Menu registration is completed manually.'
+$form.Add_Shown({ Invoke-Menu 'prepare' })
 [void]$form.ShowDialog()
 $timer.Dispose()
 $form.Dispose()

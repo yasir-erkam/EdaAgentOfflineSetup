@@ -45,6 +45,7 @@ $metadata = Get-Content -LiteralPath "$BundlePath\bundle.json" -Raw -Encoding UT
 if ($metadata.backend -notin @('altium', 'kicad')) { throw 'Unsupported backend.' }
 if ($metadata.backend -eq 'altium') {
     if ((Get-FileHash (Join-Path $PSScriptRoot 'payload\altium\altium_menu.py')).Hash -ne (Get-FileHash (Join-Path $BundlePath 'altium_menu.py')).Hash) { throw 'Stale Altium menu controller. Prepare a new bundle.' }
+    if ((Get-FileHash (Join-Path $PSScriptRoot 'installer\Connection-Assistant.ps1')).Hash -ne (Get-FileHash (Join-Path $BundlePath 'Connection-Assistant.ps1')).Hash) { throw 'Stale Connection Assistant. Prepare a new bundle.' }
     & "$BundlePath\runtime\python.exe" (Join-Path $PSScriptRoot 'installer\apply_altium_menu.py') "$BundlePath\runtime\Lib\site-packages\eda_agent\scripts" --verify
     if ($LASTEXITCODE -ne 0) { throw 'Altium menu patch is stale or modified. Prepare a new bundle.' }
 }

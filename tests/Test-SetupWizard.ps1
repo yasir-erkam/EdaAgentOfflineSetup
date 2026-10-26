@@ -32,7 +32,7 @@ try {
     $result = Get-Content $config -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($result.provider.test.options.apiKey -ne 'preserve-this' -or $result.mcp.other.enabled -ne $false -or -not $result.mcp.'eda-agent'.enabled) { throw 'Wizard configuration merge failed.' }
     if (-not (Test-Path "$install\Connection-Assistant.ps1") -or -not (Test-Path "$install\scripts\Altium_API.PrjScr")) { throw 'Assistant or Altium project missing.' }
-    foreach ($menuFile in @('altium_menu.py', 'scripts\MenuForm.pas', 'scripts\MenuForm.dfm', 'workspace\eda-menu-enabled', 'Altium-Menu-Commands.txt')) {
+    foreach ($menuFile in @('altium_menu.py', 'scripts\ConnectionAssistant.pas', 'workspace\eda-menu-enabled', 'Altium-Menu-Commands.txt')) {
         if (-not (Test-Path -LiteralPath (Join-Path $install $menuFile))) { throw "Missing menu file: $menuFile" }
     }
     $menuState = Get-Content "$install\setup-state.json" -Raw -Encoding UTF8 | ConvertFrom-Json

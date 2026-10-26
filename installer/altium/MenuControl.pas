@@ -1,6 +1,10 @@
 { Local EDA Agent offline integration. MIT; upstream units retain their license. }
 { Included in StatusForm after pump globals and before ProcessCommand. }
 
+Var
+    { Keep the revision counter in the same unit as its readers and writers. }
+    EdaMenuCounter : Integer;
+
 Function EdaMenuPumpActive(Dummy : Integer) : Boolean;
 Begin
     Result := False;
@@ -10,14 +14,15 @@ End;
 
 Function EdaMenuNewRevision(Dummy : Integer) : String;
 Begin
-    Inc(EdaMenuCounter);
+    EdaMenuCounter := EdaMenuCounter + 1;
     Result := FormatDateTime('yyyymmddhhnnsszzz', Now) + '-' + IntToStr(GetTickCount) + '-' + IntToStr(EdaMenuCounter);
 End;
 
 Procedure EdaMenuPublish(Dummy : Integer);
 Begin
     WriteFileContent(WorkspaceDir + 'eda-menu-state.json',
-        '{"revision":"' + EdaMenuRevision + '","target_project":"'
+        '{"caller_id":"' + EdaMenuCaller + '","session_id":"' + EdaMenuSession
+        + '","revision":"' + EdaMenuRevision + '","target_project":"'
         + EscapeJsonString(EdaMenuTarget) + '","running":' + BoolToJsonStr(Running) + '}');
 End;
 
@@ -65,7 +70,6 @@ Begin
         MkDir(WorkspaceDir + 'eda-menu-session.lock');
         EdaMenuOwnsLease := True;
         EdaMenuTarget := '';
-        EdaMenuCounter := 0;
         EdaMenuRevision := EdaMenuNewRevision(0);
         EdaMenuSession := EdaMenuRevision;
         Result := True;
@@ -116,8 +120,8 @@ Begin
         If D <> Nil Then ActiveDoc := D.DM_FullPath;
     End;
     Result := BuildSuccessResponse(RequestId,
-        '{"integration_version":1,"running":' + BoolToJsonStr(Running)
-        + ',"session_id":"' + EdaMenuSession + '"'
+        '{"integration_version":2,"running":' + BoolToJsonStr(Running)
+        + ',"caller_id":"' + EdaMenuCaller + '","session_id":"' + EdaMenuSession + '"'
         + ',"revision":"' + EdaMenuRevision + '","target_project":"'
         + EscapeJsonString(EdaMenuTarget) + '","focused_project":"'
         + EscapeJsonString(FocusedProject) + '","active_document":"'
@@ -180,6 +184,14 @@ Var
 Begin
     Result := '';
     If Not EdaMenuEnabled Then Exit;
+    If Pos('eda_menu.', Command) = 1 Then
+        If (ExtractJsonValue(Params, '_eda_caller_id') <> EdaMenuCaller) Or
+           (ExtractJsonValue(Params, '_eda_session_id') <> EdaMenuSession) Or
+           (EdaMenuCaller = '') Then
+        Begin
+            Result := BuildErrorResponse(RequestId, 'SESSION_MISMATCH', 'Calling Altium session changed; reopen Connection Assistant.');
+            Exit;
+        End;
     EdaMenuValidateTarget(0);
     If (Command = 'application.ping') Or (Command = 'application.get_version') Or
        (Command = 'application.get_unit_stamps') Or (Command = 'eda_menu.status') Then Exit;
@@ -253,7 +265,8 @@ Begin
         EdaMenuTarget := '';
         EdaMenuRevision := EdaMenuNewRevision(0);
         EdaMenuPublish(0);
-        Result := BuildSuccessResponse(RequestId, '{"stopping":true,"saved":false}');
+        Result := BuildSuccessResponse(RequestId, '{"stopping":true,"saved":false,"caller_id":"'
+            + EdaMenuCaller + '","session_id":"' + EdaMenuSession + '"}');
     End
     Else Result := BuildErrorResponse(RequestId, 'UNKNOWN_COMMAND', 'Unknown EDA menu command.');
 End;

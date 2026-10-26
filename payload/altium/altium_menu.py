@@ -123,7 +123,7 @@ class MenuError(RuntimeError):
 
 
 class Controller:
-    def __init__(self, root, timeout=10):
+    def __init__(self, root, timeout=10, caller_id="", session_id="", process_identity=""):
         self.root = Path(root).resolve()
         settings = json.loads((self.root / "installation.json").read_text(encoding="utf-8"))
         if settings.get("backend") != "altium":
@@ -131,16 +131,117 @@ class Controller:
         self.workspace = self.root / "workspace"
         self.enabled = (self.workspace / "eda-menu-enabled").is_file()
         self.timeout = timeout
+        self.caller_id = caller_id
+        self.session_id = session_id
+        if any(c not in "0123456789-" for c in caller_id + session_id):
+            raise MenuError("Invalid Altium context identity.")
+        if process_identity:
+            try:
+                pid, created = process_identity.split(":")
+                self.process_identity = (int(pid), float(created))
+            except ValueError:
+                raise MenuError("Invalid Altium process identity.")
+
+    def process_token(self):
+        self.sole_process()
+        return str(self.process_identity[0]) + ":" + repr(self.process_identity[1])
+
+    def sole_process(self):
+        import psutil
+        candidates = list(psutil.process_iter(["name", "create_time"]))
+        candidates = [p for p in candidates if (p.info.get("name") or "").lower() in {"x2.exe", "dxp.exe"}]
+        if len(candidates) != 1:
+            raise MenuError("Exactly one Altium session is required; no session was selected or changed.")
+        process = candidates[0]
+        identity = (process.pid, process.create_time())
+        if hasattr(self, "process_identity") and self.process_identity != identity:
+            raise MenuError("Altium process changed; reopen Connection Assistant.")
+        self.process_identity = identity
+        return process
+
+    def dispatch(self, action):
+        process = self.sole_process()
+        lock = self.workspace / "eda-assistant-launch.lock"
+        try:
+            lock.mkdir()
+        except FileExistsError:
+            raise MenuError("Another assistant launch is pending; no start was attempted.")
+        nonce = uuid.uuid4().hex
+        response = lock / ("response-" + nonce + ".json")
+        intent = lock / "intent.json"
+        confirmed = False
+        try:
+            from datetime import timedelta
+            body = {"nonce": nonce, "caller_id": self.caller_id, "action": action, "session_id": self.session_id,
+                    "expires": (datetime.now() + timedelta(seconds=self.timeout)).strftime("%Y%m%d%H%M%S")}
+            staged = lock / "intent.tmp"
+            staged.write_text(json.dumps(body), encoding="utf-8-sig")
+            staged.replace(intent)
+            project = self.root / "scripts" / "Altium_API.PrjScr"
+            command = f"-RScriptingSystem:RunScript(ProjectName={project}|ProcName=ConnectionAssistant.pas>DispatchConnectionAssistant)"
+            self.sole_process()
+            subprocess.Popen([process.exe(), command], close_fds=True)
+            deadline = time.monotonic() + self.timeout
+            while time.monotonic() < deadline:
+                try:
+                    data = json.loads(response.read_text(encoding="utf-8-sig"))
+                except (OSError, ValueError):
+                    time.sleep(0.05)
+                    continue
+                self.sole_process()
+                if not isinstance(data, dict):
+                    raise MenuError("Invalid native launch response.")
+                if data.get("nonce") != nonce or data.get("error"):
+                    raise MenuError(data.get("error", "Unexpected native launch response."))
+                if self.caller_id and data.get("caller_id") != self.caller_id:
+                    raise MenuError("Calling Altium context changed.")
+                if not data.get("caller_id"):
+                    raise MenuError("Native caller identity was not confirmed.")
+                if action == "prepare" and self.caller_id and data.get("session_id") != self.session_id:
+                    raise MenuError("Calling Altium session changed; reopen Connection Assistant.")
+                if action == "start" and (not isinstance(data.get("session_id"), str) or not data["session_id"] or data.get("running") is not True):
+                    raise MenuError("Native bridge start was not confirmed.")
+                confirmed = True
+                self.caller_id = data["caller_id"]
+                self.session_id = data.get("session_id", "")
+                return data
+            raise TimeoutError("Native launch was not confirmed; no retry or force was attempted.")
+        finally:
+            # A late callback must not consume a replacement owner's intent.
+            # Keep an unconfirmed mailbox until all Altium sessions are closed.
+            if confirmed:
+                for path in (intent, response, lock / "intent.tmp"):
+                    path.unlink(missing_ok=True)
+                try:
+                    lock.rmdir()
+                except OSError:
+                    pass
+
+    def prepare(self):
+        token = self.process_token()
+        if not self.enabled:
+            return {"caller_id": "", "session_id": "", "running": False, "process_identity": token}
+        if self.caller_id:
+            if not (self.workspace / ("eda-assistant-caller-" + self.caller_id + ".json")).is_file():
+                raise MenuError("Calling Altium context is unavailable; reopen Connection Assistant.")
+        data = self.dispatch("prepare")
+        data["process_identity"] = token
+        return data
 
     def request(self, command, params=None):
         if command not in {"application.ping", "eda_menu.status", "eda_menu.select", "eda_menu.disconnect"}:
             raise MenuError("Unsupported menu control command.")
+        if hasattr(self, "process_identity"):
+            self.sole_process()
         request_id = uuid.uuid4().hex
         staged = self.workspace / f"request_{request_id}.json.tmp"
         request = staged.with_suffix("")
         response = self.workspace / f"response_{request_id}.json"
+        if self.enabled and (not self.caller_id or not self.session_id):
+            raise MenuError("Start the connection in this assistant before requesting bridge status.")
         body = {"protocol_version": 2, "id": request_id, "command": command,
-                "params": dict(params or {}, _eda_menu_revision=revision_for(self.workspace))}
+                "params": dict(params or {}, _eda_menu_revision=revision_for(self.workspace),
+                               _eda_caller_id=self.caller_id, _eda_session_id=self.session_id)}
         try:
             with staged.open("x", encoding="utf-8-sig") as stream:
                 json.dump(body, stream, ensure_ascii=False)
@@ -161,6 +262,9 @@ class Controller:
                         raise MenuError(str(error.get("message", error)))
                     if not isinstance(data.get("data"), dict):
                         raise MenuError("Bridge returned invalid control data.")
+                    if self.enabled and (data["data"].get("caller_id") != self.caller_id or
+                                         data["data"].get("session_id") != self.session_id):
+                        raise MenuError("Bridge response belongs to another session.")
                     return data["data"]
                 if time.monotonic() >= deadline:
                     raise TimeoutError("Bridge did not answer; its state is unknown. No force or save was attempted.")
@@ -171,7 +275,7 @@ class Controller:
 
     def status(self):
         data = self.request("eda_menu.status" if self.enabled else "application.ping")
-        if self.enabled and data.get("integration_version") != 1:
+        if self.enabled and data.get("integration_version") != 2:
             raise MenuError("Reload the installed Altium script project; menu adapter version mismatch.")
         if not self.enabled:
             if data.get("pong") is not True:
@@ -183,11 +287,12 @@ class Controller:
         return data
 
     def start(self):
-        import psutil
-        candidates = [p for p in psutil.process_iter(["name"])
-                      if (p.info.get("name") or "").lower() in {"x2.exe", "dxp.exe"}]
-        if len(candidates) != 1:
-            raise MenuError("Start requires exactly one open Altium session; existing bridges were left unchanged.")
+        if self.enabled:
+            if not self.caller_id:
+                self.prepare()
+            self.dispatch("start")
+            return self.status()
+        self.sole_process()
         # Upstream returns after publishing the start request, so probe afterwards.
         result = subprocess.run([str(self.root / "runtime" / "python.exe"),
                                  str(self.root / "launch.py"), "relaunch"],
@@ -213,10 +318,11 @@ class Controller:
                 state = json.loads((self.workspace / "eda-menu-state.json").read_text(encoding="utf-8-sig"))
             except (OSError, ValueError):
                 state = {}
-            if state.get("running") is False:
+            if (state.get("running") is False and state.get("caller_id") == self.caller_id
+                    and state.get("session_id") == self.session_id):
                 # The pump removes its atomic directory lease only after finalization.
                 if not (self.workspace / "eda-menu-session.lock").exists():
-                    return {"running": False, "saved": False}
+                    return {"running": False, "saved": False, "caller_id": self.caller_id, "session_id": self.session_id}
             time.sleep(0.05)
         raise TimeoutError("Stop was requested but not confirmed; do not force restart.")
 
@@ -226,11 +332,15 @@ def main():
         if stream is not None and hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("start", "status", "select", "disconnect", "reconnect"))
+    parser.add_argument("command", choices=("prepare", "start", "status", "select", "disconnect", "reconnect"))
     parser.add_argument("--project")
+    parser.add_argument("--caller-id", default="")
+    parser.add_argument("--session-id", default="")
+    parser.add_argument("--process-identity", default="")
     args = parser.parse_args()
     try:
-        controller = Controller(Path(__file__).resolve().parent)
+        controller = Controller(Path(__file__).resolve().parent, caller_id=args.caller_id,
+                                session_id=args.session_id, process_identity=args.process_identity)
         if args.command == "select":
             if not args.project:
                 raise MenuError("Select requires --project with an open design project path.")
