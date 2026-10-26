@@ -1,5 +1,10 @@
 # Sürüm Notları
 
+## 0.1.8
+
+- Belge denetimi ve PDF üretimi PATH üzerindeki ilk Node.js uygulamasını kullanır; birden fazla `node.exe` bulunduğunda PowerShell 5.1'in yolları tek geçersiz komutta birleştirmesi giderildi.
+- 0.1.7 kaynak kapsamı bu sürüme dahildir. `v0.1.7` etiketi değiştirilmeden korunur; CI belge aşamasında başarısız olduğundan 0.1.7 Release'i yayımlanmadı. Yerel iki paket derlemesi ve otomatik kontrollerin geçmesi canlı Altium 26.7.1 native çalışma doğrulaması değildir; bu doğrulama hâlâ bekliyor.
+
 ## 0.1.7
 
 - Mevcut `ShowConnectionAssistant` Customize girişi korunarak aynı dış yardımcıya doğrudan Başlat/Durum/Kes/Yeniden bağlan girişleri eklendi. Beş elle kayıt komutu `Altium-Menu-Commands.txt` içinde üretilir; otomatik profil/menü kaydı yapılmaz. Doğrudan işlem başarılı çağıran/oturum bağlamasından sonra bir kez çalışır; bağlama hatasında çalışmaz. Durum durmuş köprüyü başlatmaz; güvenli kesme/yeniden bağlanma belge kaydetmez. UIAutomation fixture'ı gerçek PowerShell/Python akışını, native callback taklidiyle sınar; Pascal veya canlı Altium 26.7.1 uyumluluğunu kanıtlamaz.

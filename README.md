@@ -24,7 +24,7 @@ EasyEDA Pro desteklenmez.
   sonra bir kez uygulanır. Canlı Altium 26.7.1 doğrulaması beklemektedir; otomatik menü
   kaydı, ikinci native arayüz veya çoklu proje yönetimi yoktur.
 
-Bu belgeler kaynakta varsayılan kurulum sürümü **0.1.7** için hazırlanmıştır;
+Bu belgeler kaynakta varsayılan kurulum sürümü **0.1.8** için hazırlanmıştır;
 bu bilgi bir Release'in yayımlandığını veya canlı EDA bağlantısının doğrulandığını
 göstermez. [Sürüm kapsamı ve doğrulama durumu](docs/kullanim-kilavuzu.md#sürüm-kapsamı-ve-doğrulama-durumu).
 Kurulumun çevrimdışı çalışması, internet gerektiren modellerin veya arama
@@ -45,7 +45,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1 -Backe
 
 Seçilen backend için en yeni hazırlanmış paket seçilir; varsayılan backend
 `altium`'dur. `-BundlePath`,
-`-SetupVersion 0.1.7` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
+`-SetupVersion 0.1.8` ve `-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'` ile
 özelleştirilebilir. Kaynak scriptler değiştiyse eski paket reddedilir; yeniden
 hazırlayın. EXE ve `.sha256` dosyası `dist` altında üretilir. Derleme sürümü
 upstream EDA Agent/Python sürümlerinden ayrıdır. EXE üretme adımı indirme yapmaz.
@@ -68,15 +68,15 @@ sürümler değiştirilmez.
 İlk yayın için bu otomasyonu içeren commit'ten sonra Eda deposunda etiket oluşturup gönderin:
 
 ```powershell
-git tag -a v0.1.7 -m "Release EDA installers 0.1.7"
-git push --atomic origin main refs/tags/v0.1.7
+git tag -a v0.1.8 -m "Release EDA installers 0.1.8"
+git push --atomic origin main refs/tags/v0.1.8
 ```
 
 Sonraki yayınlarda paket sürümlerini ve CHANGELOG'u güncelleyin, commit ve yeni
 etiket oluşturun. GitHub'da **Actions → Release EDA installers → Run workflow**
 üzerinden mevcut bir etiketi girerek de çalıştırabilirsiniz. Seçilen etiketin
 otomasyon dosyalarını içermesi gerekir. OpenCode deposunun `v1.1.3` etiketi Eda
-deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.7`'dir.
+deposuna ait değildir; Eda'nın mevcut kurulum sürümü `0.1.8`'dir.
 
 `release-source.json` upstream EDA Agent commit'ini ve Python sürümünü sabitler;
 iki backend aynı kaynakla derlenir. Python bağımlılıkları her hazırlamada yeniden

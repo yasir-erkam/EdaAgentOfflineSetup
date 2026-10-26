@@ -20,7 +20,7 @@ uzun sürebilir. Tam kurulum akışı bu kılavuzda, tanılama adımları yalnı
 ## Sürüm kapsamı ve doğrulama durumu
 
 Bu kılavuzun temel aldığı kaynakta `Build-Installer.ps1` varsayılan kurulum
-sürümü **0.1.7**, `release-source.json` Python sürümü **3.13.16** ve upstream
+sürümü **0.1.8**, `release-source.json` Python sürümü **3.13.16** ve upstream
 EDA Agent commit'i **`f552f69175bea93c6f53571021852de43f05447f`** olarak kayıtlıdır.
 Kurulum sürümü, Python sürümü ve upstream commit birbirinden farklı bilgilerdir;
 bu değerler bir Release'in yayımlandığını kanıtlamaz. Elinizdeki paketin sürümünü

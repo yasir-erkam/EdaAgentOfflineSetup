@@ -1,7 +1,7 @@
 # EDA Agent Altium menüsü — geliştirme sürümü
 
 Canlı Altium doğrulaması, **26.7.1 dahil**, bekliyor; bu sürümün bulunmadığı veya
-uyumsuz olduğu sonucu çıkarılamaz. Bu belge kaynak ağacının **0.1.7** varsayılan
+uyumsuz olduğu sonucu çıkarılamaz. Bu belge kaynak ağacının **0.1.8** varsayılan
 kurulum sürümündeki isteğe bağlı özelliği anlatır; yayımlanmış paket veya
 doğrulanmış sürüm uyumluluğu iddiası değildir. Özellik varsayılan olarak
 kapalıdır; KiCad paketine Altium menü adaptörü veya denetleyicisi eklenmez.
